@@ -1,0 +1,135 @@
+import { FinancialData } from "../types";
+
+export const initialData: FinancialData = {
+  income: [
+    { id: "1", source: "Salary - Base", amount: 9400 },
+    { id: "2", source: "Dynamed", amount: 100 },
+    { id: "3", source: "Amazon KDP", amount: 10 },
+    { id: "4", source: "VA Disability", amount: 4201 },
+  ],
+  expenses: [
+    {
+      id: "1",
+      category: "Housing",
+      subCategory: "Rent/Mortgage",
+      amount: 1450,
+    },
+    { id: "2", category: "Housing", subCategory: "Utilities", amount: 617 },
+    {
+      id: "3",
+      category: "Housing",
+      subCategory: "Maintenance & Cleaning",
+      amount: 480,
+    },
+    { id: "4", category: "Housing", subCategory: "Insurance", amount: 45 },
+    {
+      id: "5",
+      category: "Transportation",
+      subCategory: "Gas & Maintenance",
+      amount: 195,
+    },
+    {
+      id: "6",
+      category: "Transportation",
+      subCategory: "Insurance & Reg",
+      amount: 277,
+    },
+    { id: "7", category: "Food", subCategory: "Groceries", amount: 250 },
+    {
+      id: "8",
+      category: "Food",
+      subCategory: "Dining Out & Coffee",
+      amount: 300,
+    },
+    { id: "9", category: "Child", subCategory: "Daycare", amount: 2088 },
+    { id: "10", category: "Child", subCategory: "529b", amount: 600 },
+    {
+      id: "11",
+      category: "Medical",
+      subCategory: "Insurance & Meds",
+      amount: 178,
+    },
+    { id: "12", category: "Personal", subCategory: "Self", amount: 450 },
+    { id: "13", category: "Dogs", subCategory: "Food & Care", amount: 562 },
+    {
+      id: "14",
+      category: "Entertainment",
+      subCategory: "Subscriptions & Travel",
+      amount: 293,
+    },
+    {
+      id: "15",
+      category: "Professional",
+      subCategory: "Dues & Services",
+      amount: 496,
+    },
+  ],
+  accounts: [
+    {
+      id: "1",
+      name: "Fidelity Brokerage",
+      balance: 954250,
+      type: "Investment",
+      expectedReturn: 5.75,
+    },
+    {
+      id: "2",
+      name: "TSP",
+      balance: 432696,
+      type: "Retirement",
+      expectedReturn: 5.75,
+    },
+    {
+      id: "3",
+      name: "I-Bonds",
+      balance: 22350,
+      type: "Investment",
+      expectedReturn: 3.98,
+    },
+    {
+      id: "4",
+      name: "HSA",
+      balance: 25106,
+      type: "Health",
+      expectedReturn: 5.75,
+    },
+    {
+      id: "5",
+      name: "Traditional IRA",
+      balance: 16610,
+      type: "Retirement",
+      expectedReturn: 5.75,
+    },
+    {
+      id: "6",
+      name: "Roth IRA",
+      balance: 58083,
+      type: "Retirement",
+      expectedReturn: 5.75,
+    },
+    {
+      id: "7",
+      name: "Savings Account",
+      balance: 120000,
+      type: "Cash",
+      expectedReturn: 3.5,
+    },
+  ],
+  retirement: {
+    currentAge: 40,
+    retirementAge: 65,
+    lifeExpectancy: 95,
+    inflationRate: 3.0,
+    monthlyContribution: 5254,
+    desiredAnnualSpend: 82875,
+  },
+  budgets: [
+    { id: "1", category: "Food", amount: 600 },
+    { id: "2", category: "Entertainment", amount: 300 },
+    { id: "3", category: "Housing", amount: 3000 },
+  ],
+  savingsGoals: [
+    { id: "1", name: "Emergency Fund", targetAmount: 50000, currentAmount: 35000 },
+    { id: "2", name: "New Car", targetAmount: 30000, currentAmount: 12000 },
+  ]
+};

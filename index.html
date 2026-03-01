@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+  </head>
+  <body>
+    <div id="error-log" style="color: red; padding: 20px; font-family: monospace; white-space: pre-wrap;"></div>
+    <script>
+      window.addEventListener('error', function(event) {
+        document.getElementById('error-log').textContent += event.message + '\n' + (event.error ? event.error.stack : '') + '\n\n';
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        document.getElementById('error-log').textContent += 'Unhandled Rejection: ' + event.reason + '\n\n';
+      });
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
