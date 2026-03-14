@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { TrendingDown, Plus, Trash2, UploadCloud, X, Check, Calendar, History } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, LineChart, Line } from 'recharts';
 import { FinancialData, Transaction } from '../../types';
 import { EditableValue } from '../EditableValue';
 import { fmt, uid } from '../../utils';
@@ -20,7 +20,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
 
   const addCategory = () => updateData(d => ({
     ...d,
-    expenseCategories: [...d.expenseCategories, { id: uid(), name: 'New Category', budget: 0, color: '#7aa2f7' }],
+    expenseCategories: [...d.expenseCategories, { id: uid(), name: 'New Category', budget: 0, color: '#7aa2f7', lastUpdatedDate: new Date().toISOString().slice(0, 10) }],
   }));
 
   const removeCategory = (id: string) => updateData(d => ({ 
@@ -56,6 +56,23 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     actual: categoryActuals[c.id] || 0,
     color: c.color
   }));
+
+  // Historical data for Money Over Time Graph
+  const historicalData = useMemo(() => {
+    const months: Record<string, number> = {};
+    for (const t of data.transactions) {
+      const monthStr = t.date.slice(0, 7); // YYYY-MM
+      months[monthStr] = (months[monthStr] || 0) + t.amount;
+    }
+    const sortedMonths = Object.keys(months).sort();
+    return sortedMonths.map(m => ({
+      name: m, // YYYY-MM
+      actual: months[m],
+      budget: totalBudget // Using current total budget for historical comparison as we don't track historical budget
+    }));
+  }, [data.transactions, totalBudget]);
+
+  const showHistoricalGraph = historicalData.length > 1;
 
   const handleFile = async (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -224,7 +241,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className={`grid gap-6 ${showHistoricalGraph ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
         {/* PDF Dropzone */}
         <div 
           className={`glass-card p-6 flex flex-col items-center justify-center text-center transition-all duration-200 border-2 border-dashed ${isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border'}`}
@@ -254,8 +271,8 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
           </button>
         </div>
 
-        {/* Bar chart */}
-        <div className="glass-card p-5 md:col-span-2">
+        {/* Bar chart - MTD */}
+        <div className={`glass-card p-5 ${showHistoricalGraph ? 'md:col-span-2' : 'md:col-span-2'}`}>
           <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Current MTD vs Budget</h3>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} barSize={12} barGap={2}>
@@ -271,6 +288,24 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Historical Graph */}
+        {showHistoricalGraph && (
+          <div className="glass-card p-5 md:col-span-1">
+            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Spending Over Time</h3>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={historicalData}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
+                <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide domain={['auto', 'auto']} />
+                <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
+                <Line type="monotone" dataKey="actual" name="Actual" stroke="#f7768e" strokeWidth={2} dot={{ r: 3, fill: '#f7768e', strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="budget" name="Budget" stroke="#7aa2f7" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -288,7 +323,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="sticky top-0 bg-[#1a1b26] z-10" style={{ borderBottom: '1px solid #1e2030' }}>
-                  {['Category', 'MTD Actual', 'Budget', ''].map(h => (
+                  {['Category', 'MTD Actual', 'Budget', 'Last Updated', ''].map(h => (
                     <th key={h} className="text-left py-2 px-2 text-xs font-medium" style={{ color: '#565f89' }}>{h}</th>
                   ))}
                 </tr>
@@ -297,6 +332,34 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                 {data.expenseCategories.map(exp => {
                   const actual = categoryActuals[exp.id] || 0;
                   const over = actual > exp.budget && exp.budget > 0;
+                  const todayStr = new Date().toISOString().slice(0, 10);
+
+                  const handleActualEdit = (newActual: number) => {
+                    const diff = newActual - actual;
+                    if (diff === 0) return;
+                    updateData(d => ({
+                      ...d,
+                      transactions: [...d.transactions, {
+                        id: uid(),
+                        date: todayStr,
+                        description: 'Manual Adjustment',
+                        amount: diff,
+                        categoryId: exp.id,
+                      }],
+                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
+                    }));
+                  };
+
+                  const handleBudgetEdit = (v: number) => {
+                    updateData(d => ({
+                      ...d,
+                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, budget: v, lastUpdatedDate: todayStr } : c)
+                    }));
+                  };
+
+                  const daysSinceUpdate = exp.lastUpdatedDate ? Math.floor((new Date().getTime() - new Date(exp.lastUpdatedDate).getTime()) / (1000 * 3600 * 24)) : 0;
+                  const oldData = daysSinceUpdate >= 30;
+
                   return (
                     <tr key={exp.id} style={{ borderBottom: '1px solid #1e203060' }}>
                       <td className="py-2 px-2">
@@ -307,11 +370,26 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                         </div>
                       </td>
                       <td className="py-2 px-2">
-                        <span className={`font-medium ${over ? 'text-destructive' : 'text-foreground'}`}>${actual.toFixed(2)}</span>
+                        <span className={`font-medium ${over ? 'text-destructive' : 'text-foreground'}`}>
+                          <EditableValue value={actual} size="sm" onChange={handleActualEdit} />
+                        </span>
                       </td>
                       <td className="py-2 px-2">
-                        <EditableValue value={exp.budget} size="sm"
-                          onChange={v => updateData(d => ({ ...d, expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, budget: v } : c) }))} />
+                        <EditableValue value={exp.budget} size="sm" onChange={handleBudgetEdit} />
+                      </td>
+                      <td className="py-2 px-2">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1">
+                            <Calendar size={12} className="text-muted-foreground" />
+                            <input
+                              type="date"
+                              className="bg-transparent border-0 text-xs text-muted-foreground focus:outline-none p-0 w-[100px]"
+                              value={exp.lastUpdatedDate || todayStr}
+                              onChange={e => updateData(d => ({ ...d, expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: e.target.value } : c) }))}
+                            />
+                          </div>
+                          {oldData && <span className="text-[10px] text-destructive leading-tight mt-0.5" title={`${daysSinceUpdate} days ago`}>Edited {Math.floor(daysSinceUpdate / 30)} mo ago</span>}
+                        </div>
                       </td>
                       <td className="py-2 px-2 text-right">
                         <button onClick={() => removeCategory(exp.id)} className="p-1 rounded hover:bg-red-900/20">

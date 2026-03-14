@@ -21,6 +21,7 @@ export interface ExpenseCategory {
   name: string;
   budget: number;
   color: string;
+  lastUpdatedDate?: string; // YYYY-MM-DD
 }
 
 export interface Transaction {
