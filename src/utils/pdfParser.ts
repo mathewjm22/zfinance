@@ -1,4 +1,4 @@
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import * as pdfjsLib from 'pdfjs-dist';
 import { ExpenseCategory, Transaction } from '../types';
 import { uid } from '../utils';
 
