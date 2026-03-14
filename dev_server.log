@@ -7,3 +7,6 @@
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.0.2:3000/
+10:50:02 PM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
+10:54:27 PM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
+10:54:33 PM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
