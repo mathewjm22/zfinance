@@ -6,6 +6,51 @@ import { EditableValue } from '../EditableValue';
 import { fmt, uid } from '../../utils';
 import { parseChaseStatement, ParsedTransaction } from '../../utils/pdfParser';
 
+function AddExpenseInput({ total, onAdd }: { total: number, onAdd: (v: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const start = () => {
+    setDraft('');
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 10);
+  };
+
+  const commit = () => {
+    const num = parseFloat(draft.replace(/[$,]/g, ''));
+    if (!isNaN(num) && num > 0) onAdd(num);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        placeholder="Add..."
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+        className="w-20 text-left text-sm bg-black/40 border border-border rounded px-1"
+        style={{ maxWidth: '80px' }}
+      />
+    );
+  }
+
+  return (
+    <span
+      className="editable-value text-sm flex items-center gap-1 group cursor-pointer"
+      onClick={start}
+      title="Click to add expense"
+    >
+      {fmt.currency(total)}
+      <Plus size={10} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </span>
+  );
+}
+
 interface Props {
   data: FinancialData;
   updateData: (fn: (p: FinancialData) => FinancialData) => void;
@@ -333,17 +378,16 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                   const actual = categoryActuals[exp.id] || 0;
                   const over = actual > exp.budget && exp.budget > 0;
                   const todayStr = new Date().toISOString().slice(0, 10);
-
-                  const handleActualEdit = (newActual: number) => {
-                    const diff = newActual - actual;
-                    if (diff === 0) return;
+                  
+                  const handleActualAdd = (newAmount: number) => {
+                    if (newAmount === 0 || isNaN(newAmount)) return;
                     updateData(d => ({
                       ...d,
                       transactions: [...d.transactions, {
                         id: uid(),
-                        date: todayStr,
-                        description: 'Manual Adjustment',
-                        amount: diff,
+                        date: exp.lastUpdatedDate || todayStr,
+                        description: 'Manual Entry',
+                        amount: newAmount,
                         categoryId: exp.id,
                       }],
                       expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
@@ -351,9 +395,9 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                   };
 
                   const handleBudgetEdit = (v: number) => {
-                    updateData(d => ({
-                      ...d,
-                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, budget: v, lastUpdatedDate: todayStr } : c)
+                    updateData(d => ({ 
+                      ...d, 
+                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, budget: v, lastUpdatedDate: todayStr } : c) 
                     }));
                   };
 
@@ -371,7 +415,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                       </td>
                       <td className="py-2 px-2">
                         <span className={`font-medium ${over ? 'text-destructive' : 'text-foreground'}`}>
-                          <EditableValue value={actual} size="sm" onChange={handleActualEdit} />
+                          <AddExpenseInput total={actual} onAdd={handleActualAdd} />
                         </span>
                       </td>
                       <td className="py-2 px-2">
@@ -381,7 +425,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1">
                             <Calendar size={12} className="text-muted-foreground" />
-                            <input
+                            <input 
                               type="date"
                               className="bg-transparent border-0 text-xs text-muted-foreground focus:outline-none p-0 w-[100px]"
                               value={exp.lastUpdatedDate || todayStr}
