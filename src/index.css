@@ -1,0 +1,183 @@
+/* WealthDash – Dark Tokyo Night Theme */
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --color-background: #0d0d0d;
+  --color-foreground: #c0caf5;
+  --color-card: #16161e;
+  --color-card-border: #2a2a3d;
+  --color-primary: #7aa2f7;
+  --color-primary-dark: #3d59a1;
+  --color-accent: #bb9af7;
+  --color-success: #9ece6a;
+  --color-warning: #e0af68;
+  --color-danger: #f7768e;
+  --color-muted: #565f89;
+  --color-muted-foreground: #a9b1d6;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background-color: #0d0d0d;
+  color: #c0caf5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #16161e; }
+::-webkit-scrollbar-thumb { background: #2a2a3d; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3d59a1; }
+
+/* Glass card */
+.glass-card {
+  background: rgba(22, 22, 30, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 42, 61, 0.6);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-card:hover {
+  border-color: rgba(122, 162, 247, 0.3);
+  box-shadow: 0 0 20px rgba(122, 162, 247, 0.05);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow-primary { text-shadow: 0 0 20px rgba(122, 162, 247, 0.5); }
+.glow-success { text-shadow: 0 0 20px rgba(158, 206, 106, 0.5); }
+.glow-danger  { text-shadow: 0 0 20px rgba(247, 118, 142, 0.5); }
+
+/* Editable value hover */
+.editable-value {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 4px;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.editable-value:hover { background: rgba(122, 162, 247, 0.12); }
+
+/* Tab nav pill */
+.tab-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #565f89;
+  transition: all 0.15s;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+.tab-pill:hover { color: #c0caf5; background: rgba(255,255,255,0.05); }
+.tab-pill.active { color: #7aa2f7; background: rgba(122, 162, 247, 0.15); }
+
+/* Progress bar */
+.progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: #1a1b26;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #7aa2f7, #bb9af7);
+  transition: width 0.5s ease;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.2s ease forwards; }
+
+/* Pulse for sync icon */
+@keyframes pulse-blue {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse-blue { animation: pulse-blue 1.4s ease-in-out infinite; }
+
+/* Input styles */
+input[type="number"], input[type="text"] {
+  background: #1a1b26;
+  border: 1px solid #2a2a3d;
+  color: #c0caf5;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  outline: none;
+}
+input[type="number"]:focus, input[type="text"]:focus {
+  border-color: #7aa2f7;
+  box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.15);
+}
+
+/* Recharts overrides */
+.recharts-text { fill: #565f89 !important; font-size: 11px !important; }
+.recharts-cartesian-grid line { stroke: #1e2030 !important; }
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #1a1b26 !important;
+  border: 1px solid #2a2a3d !important;
+  border-radius: 8px !important;
+  color: #c0caf5 !important;
+}
+
+/* Google sign-in button overrides */
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.google-btn:hover { box-shadow: 0 1px 6px rgba(0,0,0,0.3); }
+
+/* Chip / badge */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.chip-success { background: rgba(158,206,106,0.15); color: #9ece6a; }
+.chip-warning { background: rgba(224,175,104,0.15); color: #e0af68; }
+.chip-danger  { background: rgba(247,118,142,0.15); color: #f7768e; }
+.chip-info    { background: rgba(122,162,247,0.15); color: #7aa2f7; }
+.chip-muted   { background: rgba(86,95,137,0.15); color: #565f89; }

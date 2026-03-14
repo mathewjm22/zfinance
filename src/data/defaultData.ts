@@ -1,0 +1,84 @@
+import { FinancialData } from '../types';
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+export const defaultData: FinancialData = {
+  version: 1,
+  lastUpdated: new Date().toISOString(),
+  personalInfo: {
+    name: 'My Family',
+    age: 40,
+    retirementAge: 65,
+    retirementGoal: 2_000_000,
+    currentSavingsRate: 59.9,
+    expectedReturn: 7,
+    inflationRate: 3,
+    safeWithdrawalRate: 4,
+  },
+  accounts: [
+    { id: uid(), name: 'Fidelity Brokerage', balance: 954_250, color: '#7aa2f7', type: 'brokerage' },
+    { id: uid(), name: 'TSP',                balance: 432_696, color: '#9ece6a', type: 'retirement' },
+    { id: uid(), name: 'I-Bonds',            balance:  22_350, color: '#e0af68', type: 'bond' },
+    { id: uid(), name: 'HSA',                balance:  25_106, color: '#73daca', type: 'hsa' },
+    { id: uid(), name: 'Traditional IRA',    balance:       0, color: '#bb9af7', type: 'retirement' },
+    { id: uid(), name: 'Roth IRA',           balance:  58_083, color: '#ff9e64', type: 'retirement' },
+    { id: uid(), name: 'USAA Brokerage',     balance:  31_452, color: '#2ac3de', type: 'brokerage' },
+  ],
+  incomeSources: [
+    { id: uid(), name: 'Primary Salary',  amount: 9_500,  gross: 12_000, type: 'salary' },
+    { id: uid(), name: 'Spouse Salary',   amount: 3_500,  gross:  4_200, type: 'salary' },
+    { id: uid(), name: 'Side Business',   amount:   711,  gross:    711, type: 'other' },
+  ],
+  expenseCategories: [
+    { id: uid(), name: 'Housing',         amount: 2_800,  budget: 2_800, color: '#7aa2f7' },
+    { id: uid(), name: 'Transportation',  amount: 1_200,  budget: 1_000, color: '#9ece6a' },
+    { id: uid(), name: 'Food',            amount: 1_100,  budget: 1_000, color: '#e0af68' },
+    { id: uid(), name: 'Healthcare',      amount:   450,  budget:   450, color: '#f7768e' },
+    { id: uid(), name: 'Education',       amount:   300,  budget:   300, color: '#bb9af7' },
+    { id: uid(), name: 'Entertainment',   amount:   400,  budget:   300, color: '#ff9e64' },
+    { id: uid(), name: 'Utilities',       amount:   350,  budget:   350, color: '#73daca' },
+    { id: uid(), name: 'Insurance',       amount:   600,  budget:   600, color: '#2ac3de' },
+    { id: uid(), name: 'Personal',        amount:   297,  budget:   300, color: '#a9b1d6' },
+    { id: uid(), name: 'Travel',          amount:   500,  budget:   500, color: '#cba6f7' },
+    { id: uid(), name: 'Giving',          amount:   750,  budget:   750, color: '#fab387' },
+  ],
+  retirementContributions: [
+    { id: uid(), accountName: 'TSP',           monthlyAmount: 1_917, annualMax: 23_000, employerMatch: 5 },
+    { id: uid(), accountName: 'Roth IRA',      monthlyAmount:   583, annualMax:  7_000, employerMatch: 0 },
+    { id: uid(), accountName: 'Roth IRA (S)',  monthlyAmount:   583, annualMax:  7_000, employerMatch: 0 },
+    { id: uid(), accountName: 'HSA',           monthlyAmount:   392, annualMax:  4_700, employerMatch: 0 },
+    { id: uid(), accountName: '401k',          monthlyAmount: 1_779, annualMax: 23_000, employerMatch: 4 },
+  ],
+  goals: [
+    { id: uid(), name: 'Emergency Fund',       targetAmount: 45_000, currentAmount: 30_000, targetDate: '2025-12-31', color: '#7aa2f7' },
+    { id: uid(), name: 'Home Down Payment',    targetAmount: 100_000, currentAmount: 65_000, targetDate: '2026-06-30', color: '#9ece6a' },
+    { id: uid(), name: 'Net Worth Goal',       targetAmount: 2_000_000, currentAmount: 1_523_937, targetDate: '2051-01-01', color: '#bb9af7' },
+    { id: uid(), name: 'College – Child 1',   targetAmount: 80_000, currentAmount: 18_000, targetDate: '2035-09-01', color: '#e0af68' },
+    { id: uid(), name: 'Vacation Fund',        targetAmount: 15_000, currentAmount: 8_500,  targetDate: '2025-07-01', color: '#73daca' },
+  ],
+  taxInfo: {
+    filingStatus: 'married_joint',
+    federalTaxableIncome: 164_520,
+    stateTaxRate: 5.75,
+    itemizedDeductions: 0,
+    standardDeduction: 27_700,
+    preTaxContributions: 63_050,
+  },
+  portfolioHoldings: [
+    { id: uid(), ticker: 'FSKAX', name: 'Fidelity Total Market',   shares: 3200, price: 180.50, allocation: 45, assetClass: 'us_stock' },
+    { id: uid(), ticker: 'FTIHX', name: 'Fidelity Intl Index',     shares: 2800, price:  57.20, allocation: 25, assetClass: 'intl_stock' },
+    { id: uid(), ticker: 'FXNAX', name: 'Fidelity Bond Index',     shares: 1500, price:  11.80, allocation: 20, assetClass: 'bond' },
+    { id: uid(), ticker: 'FSRNX', name: 'Fidelity REIT Index',     shares:  400, price:  14.90, allocation:  5, assetClass: 'reit' },
+    { id: uid(), ticker: 'Cash',  name: 'Money Market / Cash',     shares:    1, price: 12000,  allocation:  5, assetClass: 'cash' },
+  ],
+  collegePlans: [
+    { id: uid(), childName: 'Child 1', currentAge: 8, collegeAge: 18, currentSaved: 18_000, monthlyContribution: 300, estimatedYearlyCost: 35_000, years529: 10 },
+  ],
+  healthRecords: [
+    { id: uid(), category: 'Dental', amount: 400,   description: 'Annual checkups', date: '2024-01-15' },
+    { id: uid(), category: 'Vision', amount: 250,   description: 'Glasses + exam',  date: '2024-03-01' },
+    { id: uid(), category: 'Medical', amount: 1_200, description: 'Copays',         date: '2024-06-01' },
+  ],
+  hsaBalance: 25_106,
+  hsaMonthlyContribution: 392,
+};
