@@ -60,6 +60,11 @@ export function useFinancialData() {
     .filter(t => t.date.startsWith(currentMonth))
     .reduce((s, t) => s + t.amount, 0);
 
+  const totalContributions = (data.retirementContributions || []).reduce(
+    (s, c) => s + c.monthlyAmount + (c.monthlyAmount * (c.employerMatch || 0) / 100),
+    0
+  );
+
   const monthlyNet           = totalMonthlyIncome - totalMonthlyExpenses;
   const savingsRate          = totalGrossIncome > 0
     ? ((totalContributions + Math.max(0, monthlyNet)) / totalGrossIncome) * 100
