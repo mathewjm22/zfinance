@@ -39,9 +39,10 @@ export const defaultData: FinancialData = {
     { id: uid(), name: 'Utilities',       amount:   350,  budget:   350, color: '#73daca' },
     { id: uid(), name: 'Insurance',       amount:   600,  budget:   600, color: '#2ac3de' },
     { id: uid(), name: 'Personal',        amount:   297,  budget:   300, color: '#a9b1d6' },
-    { id: uid(), name: 'Travel',          amount:   500,  budget:   500, color: '#cba6f7' },
-    { id: uid(), name: 'Giving',          amount:   750,  budget:   750, color: '#fab387' },
+    { id: uid(), name: 'Travel',          budget:   500, color: '#cba6f7' },
+    { id: uid(), name: 'Giving',          budget:   750, color: '#fab387' },
   ],
+  transactions: [],
   retirementContributions: [
     { id: uid(), accountName: 'TSP',           monthlyAmount: 1_917, annualMax: 23_000, employerMatch: 5 },
     { id: uid(), accountName: 'Roth IRA',      monthlyAmount:   583, annualMax:  7_000, employerMatch: 0 },

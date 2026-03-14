@@ -52,8 +52,14 @@ export function useFinancialData() {
   const totalNetWorth     = data.accounts.reduce((s, a) => s + a.balance, 0);
   const totalMonthlyIncome   = data.incomeSources.reduce((s, i) => s + i.amount, 0);
   const totalGrossIncome     = data.incomeSources.reduce((s, i) => s + i.gross, 0);
-  const totalMonthlyExpenses = data.expenseCategories.reduce((s, e) => s + e.amount, 0);
-  const totalContributions   = data.retirementContributions.reduce((s, c) => s + c.monthlyAmount, 0);
+  // Calculate current month strings (YYYY-MM)
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  
+  // Expenses this month
+  const totalMonthlyExpenses = (data.transactions || [])
+    .filter(t => t.date.startsWith(currentMonth))
+    .reduce((s, t) => s + t.amount, 0);
+
   const monthlyNet           = totalMonthlyIncome - totalMonthlyExpenses;
   const savingsRate          = totalGrossIncome > 0
     ? ((totalContributions + Math.max(0, monthlyNet)) / totalGrossIncome) * 100

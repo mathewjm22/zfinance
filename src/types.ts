@@ -19,9 +19,16 @@ export interface IncomeSource {
 export interface ExpenseCategory {
   id: string;
   name: string;
-  amount: number;
   budget: number;
   color: string;
+}
+
+export interface Transaction {
+  id: string;
+  date: string; // YYYY-MM-DD
+  description: string;
+  amount: number;
+  categoryId: string;
 }
 
 export interface RetirementContribution {
@@ -97,6 +104,7 @@ export interface FinancialData {
   accounts: Account[];
   incomeSources: IncomeSource[];
   expenseCategories: ExpenseCategory[];
+  transactions: Transaction[];
   retirementContributions: RetirementContribution[];
   goals: FinancialGoal[];
   taxInfo: TaxInfo;
