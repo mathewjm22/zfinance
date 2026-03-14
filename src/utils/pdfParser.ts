@@ -1,9 +1,11 @@
-import * as pdfjsLib from 'pdfjs-dist';
 import { ExpenseCategory, Transaction } from '../types';
 import { uid } from '../utils';
 
-// Point to the CDN worker to prevent Vite bundling issues with the worker thread
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
 
 export interface ParsedTransaction {
   id: string;
@@ -50,6 +52,13 @@ function getSuggestedCategory(description: string, categories: ExpenseCategory[]
 }
 
 export async function parseChaseStatement(file: File, categories: ExpenseCategory[]): Promise<ParsedTransaction[]> {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) {
+    throw new Error("PDF parser library not loaded yet. Please try again.");
+  }
+  
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   
