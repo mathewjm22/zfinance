@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Recommendations – Family Financial Dashboard</title>
+  <meta name="description" content="Get personalized financial recommendations based on your income and spending." />
+  <style>
+    /* ── CSS Custom Properties matching main dashboard theme ── */
+    :root {
+      --radius: 0.625rem;
+      --background: #0D0D0D;
+      --foreground: #FFFFFF;
+      --card: #1A1A1A;
+      --card-foreground: #FFFFFF;
+      --primary: #32CD32;
+      --primary-foreground: #0D0D0D;
+      --secondary: #242424;
+      --muted: #242424;
+      --muted-foreground: #B8B8B8;
+      --destructive: #FF6B6B;
+      --border: #333333;
+      --input: #333333;
+      --ring: #32CD32;
+      --warning: #F59E0B;
+    }
+
+    /* ── Base Reset & Layout ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      border-bottom: 1px solid var(--border);
+      background: rgba(13, 13, 13, 0.95);
+      backdrop-filter: blur(8px);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--foreground);
+    }
+
+    .brand-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, var(--primary), #2E8B57);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-icon svg { color: var(--primary-foreground); }
+
+    .brand-title { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; }
+    .brand-sub   { font-size: 0.75rem; color: var(--muted-foreground); }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .back-btn:hover { color: var(--primary); border-color: var(--primary); }
+
+    /* ── Main Content ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .page-subtitle {
+      color: var(--muted-foreground);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary);
+    }
+
+    .card-title svg { flex-shrink: 0; }
+
+    /* ── Input Grid ── */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .field-hint {
+      font-size: 0.7rem;
+      color: var(--muted-foreground);
+      opacity: 0.7;
+      margin-top: -0.2rem;
+    }
+
+    .field input {
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--foreground);
+      font-size: 0.95rem;
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+
+    .field input:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px rgba(50, 205, 50, 0.2);
+    }
+
+    /* ── Submit Button ── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1.5rem;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity 0.15s;
+      margin-top: 1.25rem;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+
+    /* ── Recommendations Output ── */
+    #recommendations-section { display: none; }
+
+    .rec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    /* individual recommendation item */
+    .rec-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      border-left: 3px solid transparent;
+      background: var(--secondary);
+      font-size: 0.9rem;
+    }
+
+    .rec-item.warn  { border-left-color: var(--warning); }
+    .rec-item.good  { border-left-color: var(--primary); }
+    .rec-item.info  { border-left-color: #3B82F6; }
+
+    .rec-icon { font-size: 1.1rem; line-height: 1.4; flex-shrink: 0; }
+
+    .rec-text strong { font-weight: 600; display: block; margin-bottom: 0.1rem; }
+    .rec-text span   { color: var(--muted-foreground); font-size: 0.82rem; }
+
+    /* summary badges */
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .summary-badge {
+      background: var(--secondary);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .summary-badge span { color: var(--primary); font-weight: 700; }
+
+    /* ── On-track notice ── */
+    .all-good {
+      text-align: center;
+      padding: 2rem;
+      color: var(--primary);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted-foreground);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .input-grid { grid-template-columns: 1fr 1fr; }
+      .page-title { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header>
+  <div class="header-inner">
+    <!-- Brand / back to dashboard -->
+    <a href="/zfinance/" class="header-brand" aria-label="Back to Financial Dashboard">
+      <div class="brand-icon">
+        <!-- Wallet icon (matches main dashboard) -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+          <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Financial Dashboard</div>
+        <div class="brand-sub">Smart Recommendations</div>
+      </div>
+    </a>
+    <!-- Back link -->
+    <a href="/zfinance/" class="back-btn" aria-label="Return to dashboard">
+      <!-- Arrow-left icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+      </svg>
+      Dashboard
+    </a>
+  </div>
+</header>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<main>
+  <h1 class="page-title">💡 Smart Recommendations</h1>
+  <p class="page-subtitle">
+    Enter your monthly figures below and click <strong>Analyze</strong> to receive
+    personalized, actionable financial advice.
+  </p>
+
+  <!-- ── Input Form ── -->
+  <form id="finance-form" novalidate>
+
+    <!-- Income card -->
+    <div class="card">
+      <div class="card-title">
+        <!-- Dollar-sign icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        Income
+      </div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="income">Monthly Take-Home Income</label>
+          <div class="field-hint">After-tax / net income</div>
+          <input type="number" id="income" name="income" min="0" step="1"
+                 value="5000" placeholder="e.g. 5000" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses card -->
+    <div class="card">
+      <div class="card-title">
+        <!-- Shopping-cart icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        </svg>
+        Monthly Expenses
+      </div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="housing">Housing (rent/mortgage)</label>
+          <div class="field-hint">Benchmark: ≤ 28% of income</div>
+          <input type="number" id="housing" name="housing" min="0" step="1"
+                 value="1500" placeholder="e.g. 1500" />
+        </div>
+        <div class="field">
+          <label for="groceries">Groceries</label>
+          <div class="field-hint">Benchmark: ~10–12% of income</div>
+          <input type="number" id="groceries" name="groceries" min="0" step="1"
+                 value="500" placeholder="e.g. 500" />
+        </div>
+        <div class="field">
+          <label for="dining">Dining Out &amp; Takeout</label>
+          <div class="field-hint">Benchmark: ≤ 5% of income</div>
+          <input type="number" id="dining" name="dining" min="0" step="1"
+                 value="300" placeholder="e.g. 300" />
+        </div>
+        <div class="field">
+          <label for="transportation">Transportation</label>
+          <div class="field-hint">Benchmark: ≤ 15% of income</div>
+          <input type="number" id="transportation" name="transportation" min="0" step="1"
+                 value="400" placeholder="e.g. 400" />
+        </div>
+        <div class="field">
+          <label for="entertainment">Entertainment &amp; Subscriptions</label>
+          <div class="field-hint">Benchmark: ≤ 5% of income</div>
+          <input type="number" id="entertainment" name="entertainment" min="0" step="1"
+                 value="200" placeholder="e.g. 200" />
+        </div>
+        <div class="field">
+          <label for="medical">Medical &amp; Healthcare</label>
+          <div class="field-hint">Benchmark: ≤ 5–8% of income</div>
+          <input type="number" id="medical" name="medical" min="0" step="1"
+                 value="150" placeholder="e.g. 150" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Savings & Goals card -->
+    <div class="card">
+      <div class="card-title">
+        <!-- Piggy-bank icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.5 3.3 1.3 4.5.5.7.7 1.7.5 2.5L7 21h3l.5-2c.3.1.7.2 1 .2s.7-.1 1-.2L13 21h3l-.5-2.5c-.3-.7-.1-1.7.5-2.5C17.5 14.8 18 13.3 18 11.5c0-.4 0-.8-.1-1.1l1-.4A1 1 0 0 0 20 9V7a2 2 0 0 0-1-2Z"/>
+          <path d="M9 11V9"/><path d="M13 11V9"/>
+        </svg>
+        Savings &amp; Goals
+      </div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="savings">General Savings / Month</label>
+          <div class="field-hint">Target: ≥ 20% of income</div>
+          <input type="number" id="savings" name="savings" min="0" step="1"
+                 value="400" placeholder="e.g. 400" />
+        </div>
+        <div class="field">
+          <label for="retirement">Retirement Contributions / Month</label>
+          <div class="field-hint">Target: ≥ 15% of income (401k, IRA, etc.)</div>
+          <input type="number" id="retirement" name="retirement" min="0" step="1"
+                 value="500" placeholder="e.g. 500" />
+        </div>
+        <div class="field">
+          <label for="emergency">Current Emergency Fund ($)</label>
+          <div class="field-hint">Target: 3–6 × monthly expenses</div>
+          <input type="number" id="emergency" name="emergency" min="0" step="1"
+                 value="5000" placeholder="e.g. 5000" />
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary">
+      <!-- Sparkles icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+      </svg>
+      Analyze My Finances
+    </button>
+  </form>
+
+  <!-- ── Recommendations Output ── -->
+  <section id="recommendations-section" aria-live="polite">
+    <div class="card" style="margin-top:2rem;">
+      <div class="card-title">
+        <!-- Check-circle icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Your Personalized Recommendations
+      </div>
+      <!-- Quick summary badges -->
+      <div class="summary-row" id="summary-row"></div>
+      <!-- Individual recommendation items -->
+      <div class="rec-list" id="rec-list"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer>
+  <p>Family Financial Dashboard • Smart Recommendations</p>
+  <p style="margin-top:0.25rem;">
+    💡 All calculations are client-side estimates. Consult a financial advisor for personalized guidance.
+  </p>
+</footer>
+
+<!-- ═══════════════════════ LOGIC ═══════════════════════ -->
+<script>
+  /**
+   * recommendations.html — client-side financial advice engine
+   *
+   * Benchmarks are based on widely-cited personal-finance guidelines:
+   *  - 50/30/20 rule  (needs / wants / savings)
+   *  - Housing ≤ 28% of gross / 30% of net income
+   *  - Retirement ≥ 15% of income (Fidelity / Vanguard guidelines)
+   *  - Emergency fund = 3–6 months of total monthly expenses
+   *  - Individual category caps noted inline
+   *
+   * To adjust benchmarks, edit the BENCHMARKS object below.
+   */
+
+  /* ── Benchmark definitions ──────────────────────────────────────────── */
+  const BENCHMARKS = {
+    // Expense ceilings as a fraction of monthly income
+    housing:        0.30,   // 30 % of net income
+    groceries:      0.12,   // 12 %
+    dining:         0.05,   //  5 %
+    transportation: 0.15,   // 15 %
+    entertainment:  0.05,   //  5 %
+    medical:        0.08,   //  8 %
+
+    // Savings floors as a fraction of monthly income
+    savingsRate:    0.20,   // 20 % total savings (general + retirement)
+    retirementRate: 0.15,   // 15 % retirement specifically
+
+    // Emergency fund: months of total expenses to keep in reserve
+    emergencyMonths: { low: 3, ideal: 6 },
+  };
+
+  /* ── Helpers ────────────────────────────────────────────────────────── */
+  /** Format a number as a dollar string with commas */
+  function fmt(n) {
+    return '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  /** Create a recommendation item element */
+  function makeRec(level, icon, title, detail) {
+    // level: 'warn' | 'good' | 'info'
+    const item = document.createElement('div');
+    item.className = `rec-item ${level}`;
+    item.innerHTML =
+      `<span class="rec-icon" aria-hidden="true">${icon}</span>` +
+      `<div class="rec-text"><strong>${title}</strong><span>${detail}</span></div>`;
+    return item;
+  }
+
+  /** Create a summary badge element */
+  function makeBadge(label, value) {
+    const b = document.createElement('div');
+    b.className = 'summary-badge';
+    b.innerHTML = `${label}: <span>${value}</span>`;
+    return b;
+  }
+
+  /* ── Core analysis function ─────────────────────────────────────────── */
+  /**
+   * Analyze user inputs and return an array of recommendation objects.
+   * @param {object} d  - parsed input values (all numbers)
+   * @returns {HTMLElement[]}  array of .rec-item elements
+   */
+  function analyzeFinances(d) {
+    const recs = [];
+    const inc = d.income;
+
+    // Guard: income must be positive
+    if (!inc || inc <= 0) {
+      recs.push(makeRec('info', 'ℹ️',
+        'Enter your monthly income',
+        'A valid income figure is required to calculate percentages and benchmarks.'));
+      return recs;
+    }
+
+    /* ── 1. Total expense vs income check ──────────────────────────── */
+    const totalExpenses = d.housing + d.groceries + d.dining +
+                          d.transportation + d.entertainment + d.medical;
+    const expensePct = totalExpenses / inc;
+
+    if (expensePct > 0.90) {
+      recs.push(makeRec('warn', '🚨',
+        `Expenses consume ${Math.round(expensePct * 100)}% of your income`,
+        `Your tracked expenses (${fmt(totalExpenses)}/mo) leave almost nothing for savings. ` +
+        `Aim for total expenses ≤ 70–80% of income, keeping 20%+ for savings/retirement.`));
+    } else if (expensePct > 0.75) {
+      recs.push(makeRec('warn', '⚠️',
+        `Expenses are ${Math.round(expensePct * 100)}% of income`,
+        `Tracked expenses total ${fmt(totalExpenses)}/mo. Reducing this to under 75% of income ` +
+        `will free up more room for savings and unexpected costs.`));
+    } else {
+      recs.push(makeRec('good', '✅',
+        `Expense-to-income ratio looks healthy (${Math.round(expensePct * 100)}%)`,
+        `Total tracked expenses of ${fmt(totalExpenses)}/mo leave room for savings — keep it up!`));
+    }
+
+    /* ── 2. Housing ─────────────────────────────────────────────────── */
+    const housingPct = d.housing / inc;
+    if (housingPct > BENCHMARKS.housing) {
+      recs.push(makeRec('warn', '🏠',
+        `Housing is ${Math.round(housingPct * 100)}% of income (benchmark: ≤ ${BENCHMARKS.housing * 100}%)`,
+        `At ${fmt(d.housing)}/mo, housing is above the recommended limit. ` +
+        `Consider refinancing, a roommate, or negotiating rent at renewal. ` +
+        `The benchmark ceiling is ${fmt(Math.round(inc * BENCHMARKS.housing))}/mo.`));
+    } else {
+      recs.push(makeRec('good', '🏠',
+        `Housing costs are within the recommended range (${Math.round(housingPct * 100)}%)`,
+        `${fmt(d.housing)}/mo is within the ≤ ${BENCHMARKS.housing * 100}% guideline. Great!`));
+    }
+
+    /* ── 3. Groceries ───────────────────────────────────────────────── */
+    const groceriesPct = d.groceries / inc;
+    if (groceriesPct > BENCHMARKS.groceries) {
+      recs.push(makeRec('warn', '🛒',
+        `Grocery spending is ${Math.round(groceriesPct * 100)}% of income (benchmark: ≤ ${BENCHMARKS.groceries * 100}%)`,
+        `You spend ${fmt(d.groceries)}/mo on groceries. Try meal planning, buying in bulk, ` +
+        `store-brand products, or using a cashback grocery card to lower this. ` +
+        `Target: ${fmt(Math.round(inc * BENCHMARKS.groceries))}/mo.`));
+    }
+
+    /* ── 4. Dining Out ──────────────────────────────────────────────── */
+    const diningPct = d.dining / inc;
+    if (diningPct > BENCHMARKS.dining) {
+      recs.push(makeRec('warn', '🍽️',
+        `Dining & takeout is ${Math.round(diningPct * 100)}% of income (benchmark: ≤ ${BENCHMARKS.dining * 100}%)`,
+        `At ${fmt(d.dining)}/mo, this is one of the easiest categories to trim. ` +
+        `Try cooking at home 3–4 extra nights per week — that alone can save ` +
+        `${fmt(d.dining - Math.round(inc * BENCHMARKS.dining))}/mo. ` +
+        `Target: ${fmt(Math.round(inc * BENCHMARKS.dining))}/mo.`));
+    }
+
+    /* ── 5. Transportation ──────────────────────────────────────────── */
+    const transPct = d.transportation / inc;
+    if (transPct > BENCHMARKS.transportation) {
+      recs.push(makeRec('warn', '🚗',
+        `Transportation is ${Math.round(transPct * 100)}% of income (benchmark: ≤ ${BENCHMARKS.transportation * 100}%)`,
+        `${fmt(d.transportation)}/mo is above average. Review car insurance rates, ` +
+        `consider carpooling or public transit, and avoid financing a new vehicle ` +
+        `if your current total auto expense already exceeds this limit. ` +
+        `Target: ${fmt(Math.round(inc * BENCHMARKS.transportation))}/mo.`));
+    }
+
+    /* ── 6. Entertainment ───────────────────────────────────────────── */
+    const entPct = d.entertainment / inc;
+    if (entPct > BENCHMARKS.entertainment) {
+      recs.push(makeRec('warn', '🎬',
+        `Entertainment is ${Math.round(entPct * 100)}% of income (benchmark: ≤ ${BENCHMARKS.entertainment * 100}%)`,
+        `${fmt(d.entertainment)}/mo — audit your streaming, gym, and app subscriptions. ` +
+        `Cancelling just 2–3 unused services often saves $30–$60/mo. ` +
+        `Target: ${fmt(Math.round(inc * BENCHMARKS.entertainment))}/mo.`));
+    }
+
+    /* ── 7. Medical ─────────────────────────────────────────────────── */
+    const medPct = d.medical / inc;
+    if (medPct > BENCHMARKS.medical) {
+      recs.push(makeRec('warn', '🏥',
+        `Medical/Healthcare is ${Math.round(medPct * 100)}% of income (benchmark: ≤ ${BENCHMARKS.medical * 100}%)`,
+        `Healthcare costs of ${fmt(d.medical)}/mo are elevated. If available, maximising ` +
+        `an HSA (Health Savings Account) can reduce your tax burden and offset these costs. ` +
+        `Review your plan options at next open enrollment. ` +
+        `Target: ${fmt(Math.round(inc * BENCHMARKS.medical))}/mo.`));
+    }
+
+    /* ── 8. Total Savings Rate ──────────────────────────────────────── */
+    const totalSavings = d.savings + d.retirement;
+    const savingsPct   = totalSavings / inc;
+    const targetSavings = Math.round(inc * BENCHMARKS.savingsRate);
+
+    if (savingsPct < BENCHMARKS.savingsRate) {
+      const gap = targetSavings - totalSavings;
+      recs.push(makeRec('warn', '💰',
+        `Total savings rate is ${Math.round(savingsPct * 100)}% (target: ≥ ${BENCHMARKS.savingsRate * 100}%)`,
+        `You're saving ${fmt(totalSavings)}/mo combined (general + retirement). ` +
+        `Increasing by ${fmt(gap)}/mo would reach the 20% savings benchmark. ` +
+        `Even automating a small increase of ${fmt(Math.round(gap / 2))}/mo now builds the habit.`));
+    } else {
+      recs.push(makeRec('good', '💰',
+        `Savings rate is on track at ${Math.round(savingsPct * 100)}% — excellent!`,
+        `You're putting away ${fmt(totalSavings)}/mo, meeting or exceeding the 20% guideline.`));
+    }
+
+    /* ── 9. Retirement Contributions ───────────────────────────────── */
+    const retPct = d.retirement / inc;
+    const targetRet = Math.round(inc * BENCHMARKS.retirementRate);
+
+    if (retPct < BENCHMARKS.retirementRate) {
+      const gap = targetRet - d.retirement;
+      recs.push(makeRec('warn', '🏦',
+        `Retirement contributions are ${Math.round(retPct * 100)}% of income (target: ≥ ${BENCHMARKS.retirementRate * 100}%)`,
+        `Contributing ${fmt(d.retirement)}/mo is ${fmt(gap)}/mo below the 15% guideline. ` +
+        `If your employer offers a 401(k) match, at minimum contribute enough to capture the full match — ` +
+        `that's free money. Then aim to increase contributions by 1% per year until you reach 15%+.`));
+    } else {
+      recs.push(makeRec('good', '🏦',
+        `Retirement contributions are on target (${Math.round(retPct * 100)}%)`,
+        `${fmt(d.retirement)}/mo — you're meeting or exceeding the 15% retirement guideline. Keep it up!`));
+    }
+
+    /* ── 10. Emergency Fund ─────────────────────────────────────────── */
+    const emergencyTarget3 = totalExpenses * BENCHMARKS.emergencyMonths.low;
+    const emergencyTarget6 = totalExpenses * BENCHMARKS.emergencyMonths.ideal;
+
+    if (d.emergency <= 0) {
+      recs.push(makeRec('warn', '🛡️',
+        'No emergency fund detected',
+        `Start by building a ${fmt(Math.round(emergencyTarget3))} (3-month) emergency fund. ` +
+        `Even saving ${fmt(Math.round(totalExpenses * 0.1))}/mo gets you there in about ` +
+        `${Math.round(emergencyTarget3 / (totalExpenses * 0.1))} months. ` +
+        `Keep this in a high-yield savings account (HYSA).`));
+    } else if (d.emergency < emergencyTarget3) {
+      recs.push(makeRec('warn', '🛡️',
+        `Emergency fund is below the 3-month target`,
+        `You have ${fmt(d.emergency)} saved. Your 3-month target is ${fmt(Math.round(emergencyTarget3))} ` +
+        `and your 6-month target is ${fmt(Math.round(emergencyTarget6))}. ` +
+        `Prioritize growing this before increasing discretionary spending.`));
+    } else if (d.emergency < emergencyTarget6) {
+      recs.push(makeRec('info', '🛡️',
+        `Emergency fund covers 3 months — aim for 6`,
+        `Great start with ${fmt(d.emergency)}! Boosting to ${fmt(Math.round(emergencyTarget6))} ` +
+        `(6 months of expenses) provides stronger protection against job loss or large unexpected costs.`));
+    } else {
+      recs.push(makeRec('good', '🛡️',
+        `Emergency fund is fully funded (${(d.emergency / totalExpenses).toFixed(1)} months of expenses)`,
+        `${fmt(d.emergency)} in reserves — you have solid financial security. ` +
+        `Any surplus above 6 months can be invested for better long-term growth.`));
+    }
+
+    return recs;
+  }
+
+  /* ── Form submit handler ────────────────────────────────────────────── */
+  document.getElementById('finance-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    // Read all input values, defaulting to 0 if blank
+    const get = (id) => parseFloat(document.getElementById(id).value) || 0;
+
+    const data = {
+      income:         get('income'),
+      housing:        get('housing'),
+      groceries:      get('groceries'),
+      dining:         get('dining'),
+      transportation: get('transportation'),
+      entertainment:  get('entertainment'),
+      medical:        get('medical'),
+      savings:        get('savings'),
+      retirement:     get('retirement'),
+      emergency:      get('emergency'),
+    };
+
+    // Build summary badges
+    const totalExpenses = data.housing + data.groceries + data.dining +
+                          data.transportation + data.entertainment + data.medical;
+    const totalSavings  = data.savings + data.retirement;
+    const summaryRow    = document.getElementById('summary-row');
+    summaryRow.innerHTML = '';
+
+    if (data.income > 0) {
+      summaryRow.appendChild(makeBadge('Monthly Income',   fmt(data.income)));
+      summaryRow.appendChild(makeBadge('Total Expenses',   fmt(totalExpenses)));
+      summaryRow.appendChild(makeBadge('Total Savings',    fmt(totalSavings)));
+      summaryRow.appendChild(makeBadge('Net Cash Flow',
+        fmt(data.income - totalExpenses - totalSavings)));
+    }
+
+    // Run analysis and render results
+    const recList = document.getElementById('rec-list');
+    recList.innerHTML = '';
+    const recs = analyzeFinances(data);
+    recs.forEach(item => recList.appendChild(item));
+
+    // Show recommendations section and scroll to it
+    const section = document.getElementById('recommendations-section');
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+</script>
+
+</body>
+</html>
