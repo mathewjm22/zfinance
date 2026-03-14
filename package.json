@@ -11,6 +11,7 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "lucide-react": "^0.546.0",
+    "pdfjs-dist": "^3.11.174",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.7.0",
