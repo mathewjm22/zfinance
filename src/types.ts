@@ -22,6 +22,9 @@ export interface ExpenseCategory {
   budget: number;
   color: string;
   lastUpdatedDate?: string; // YYYY-MM-DD
+  isRetirement?: boolean; // defaults to true if undefined
+  retirementAnnualOverride?: number; // optional manual override
+  retirementInflationRate?: number; // optional category-specific inflation rate
 }
 
 export interface Transaction {

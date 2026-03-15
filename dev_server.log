@@ -3,7 +3,18 @@
 > vite --port=3000 --host=0.0.0.0
 
 
-  VITE v6.4.1  ready in 563 ms
+  VITE v6.4.1  ready in 502 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.0.2:3000/
+7:25:48 PM [vite] (client) page reload verify.py
+7:27:02 PM [vite] (client) page reload verify.py
+7:27:57 PM [vite] (client) page reload verify.py
+7:29:18 PM [vite] (client) page reload verify.py
+7:30:40 PM [vite] (client) page reload verify.py
+7:33:25 PM [vite] (client) page reload verify.py
+7:34:23 PM [vite] (client) page reload verify.py
+7:37:23 PM [vite] (client) page reload verify.py
+7:39:03 PM [vite] (client) hmr update /src/index.css, /src/components/tabs/ExpensesTab.tsx
+7:40:08 PM [vite] (client) hmr update /src/App.tsx, /src/index.css, /src/components/tabs/EditDataTab.tsx
+7:40:35 PM [vite] (client) hmr update /src/index.css, /src/components/tabs/ExpensesTab.tsx
