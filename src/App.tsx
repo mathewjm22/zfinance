@@ -59,13 +59,13 @@ export default function App() {
       case 'income':     return <IncomeTab data={finance.data} updateData={finance.updateData} totalMonthlyIncome={finance.totalMonthlyIncome} totalGrossIncome={finance.totalGrossIncome} />;
       case 'expenses':   return <ExpensesTab data={finance.data} updateData={finance.updateData} totalMonthlyExpenses={finance.totalMonthlyExpenses} />;
       case 'retirement': return <RetirementTab data={finance.data} updateData={finance.updateData} totalNetWorth={finance.totalNetWorth} totalContributions={finance.totalContributions} projectedAtRetirement={finance.projectedAtRetirement} yearsToRetirement={finance.yearsToRetirement} />;
-      case 'fire':       return <FireTab data={finance.data} updateData={finance.updateData} totalNetWorth={finance.totalNetWorth} totalGrossIncome={finance.totalGrossIncome} estimatedAnnualExpenses={finance.estimatedAnnualExpenses} />;
+      case 'fire':       return <FireTab data={finance.data} updateData={finance.updateData} totalNetWorth={finance.totalNetWorth} totalGrossIncome={finance.totalGrossIncome} estimatedAnnualExpenses={finance.estimatedAnnualExpenses} breakdown={finance.estimatedAnnualExpensesBreakdown} />;
       case 'taxes':      return <TaxTab data={finance.data} updateData={finance.updateData} totalGrossIncome={finance.totalGrossIncome} />;
       case 'portfolio':  return <PortfolioTab data={finance.data} updateData={finance.updateData} />;
       case 'goals':      return <GoalsTab data={finance.data} updateData={finance.updateData} />;
       case 'health':     return <HealthTab data={finance.data} updateData={finance.updateData} />;
       case 'college':    return <CollegeTab data={finance.data} updateData={finance.updateData} />;
-      case 'analysis':   return <RetirementAnalysisTab data={finance.data} totalNetWorth={finance.totalNetWorth} totalContributions={finance.totalContributions} estimatedAnnualExpenses={finance.estimatedAnnualExpenses} />;
+      case 'analysis':   return <RetirementAnalysisTab data={finance.data} totalNetWorth={finance.totalNetWorth} totalContributions={finance.totalContributions} estimatedAnnualExpenses={finance.estimatedAnnualExpenses} breakdown={finance.estimatedAnnualExpensesBreakdown} />;
       case 'advanced':   return <AdvancedTab />;
       case 'edit-data':  return <EditDataTab data={finance.data} updateData={finance.setDataFromDrive} resetData={finance.resetToDefaults} />;
       case 'sync':       return <CloudSyncTab driveStatus={drive.status} lastSync={drive.lastSync} error={drive.error} userEmail={drive.userEmail} onConnect={drive.connect} onDisconnect={drive.disconnect} onManualSync={drive.manualSync} />;
