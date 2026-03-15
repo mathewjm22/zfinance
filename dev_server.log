@@ -3,22 +3,21 @@
 > vite --port=3000 --host=0.0.0.0
 
 
-  VITE v6.4.1  ready in 500 ms
+  VITE v6.4.1  ready in 373 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.0.2:3000/
-6:00:57 AM [vite] (client) page reload patch_expenses_ui.py
-6:00:57 AM [vite] (client) page reload patch_expenses_ts_errors.py
-6:00:57 AM [vite] (client) page reload patch_expenses_ts_errors2.py
-6:00:57 AM [vite] (client) page reload patch_yearly_input.py
-6:00:57 AM [vite] (client) page reload patch_yearly_conflict.py
-6:00:57 AM [vite] (client) page reload patch_retirement_fire.py
-6:00:57 AM [vite] (client) page reload fix_app_tsx.py
-6:00:57 AM [vite] (client) page reload verify.py
-6:01:08 AM [vite] (client) hmr update /src/components/tabs/FireTab.tsx, /src/index.css
-6:01:08 AM [vite] (client) hmr update /src/components/tabs/RetirementAnalysisTab.tsx, /src/index.css
-10:55:55 AM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
-10:57:22 AM [vite] (client) page reload patch_dropdown.py
-10:57:22 AM [vite] (client) page reload verify2.py
-11:02:29 AM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
-11:03:30 AM [vite] (client) page reload verify3.py
+4:02:43 PM [vite] (client) page reload patch_ExpensesTab3.py
+4:02:43 PM [vite] (client) page reload patch_actuals.py
+4:02:43 PM [vite] (client) page reload patch_budget.py
+4:02:43 PM [vite] (client) page reload patch_budget_header.py
+4:02:43 PM [vite] (client) page reload patch_dateDisplay.py
+4:02:43 PM [vite] (client) page reload patch_renderTabs.py
+4:02:43 PM [vite] (client) page reload patch_ExpensesTab.ts
+4:02:43 PM [vite] (client) page reload patch_ExpensesTab2.ts
+4:02:43 PM [vite] (client) page reload patch_ExpensesTab4.ts
+4:02:43 PM [vite] (client) page reload patch_lastUpdated.ts
+4:02:43 PM [vite] (client) page reload patch_overview.ts
+4:02:43 PM [vite] (client) page reload patch_overview2.ts
+4:02:43 PM [vite] (client) page reload patch_pdfParser.ts
+4:02:43 PM [vite] (client) page reload rewrite_expenses.py

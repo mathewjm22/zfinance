@@ -123,7 +123,7 @@ export async function parseChaseStatement(file: File, categories: ExpenseCategor
 }
 
 
-export function parseYearlySummaryText(text: string, year: string, categories: ExpenseCategory[]): ParsedTransaction[] {
+export function parseYearlySummaryText(text: string, defaultDate: string, categories: ExpenseCategory[]): ParsedTransaction[] {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l);
   const transactions: ParsedTransaction[] = [];
 
@@ -144,8 +144,8 @@ export function parseYearlySummaryText(text: string, year: string, categories: E
           const amount = parseFloat(match[1].replace(/,/g, ''));
           transactions.push({
             id: uid(),
-            date: `${year}-12-31`,
-            description: `${year} Summary - ${categoryName}`,
+            date: defaultDate,
+            description: `Summary - ${categoryName}`,
             amount: amount,
             suggestedCategoryId: null, // We'll handle matching in the UI
             suggestedCategoryName: categoryName
