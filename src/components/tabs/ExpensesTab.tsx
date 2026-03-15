@@ -652,7 +652,19 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
         <div className="glass-card p-5 flex flex-col h-[400px]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#c0caf5' }}>
-              <TrendingDown size={16} style={{ color: '#f7768e' }} /> Budget Categories
+              <TrendingDown size={16} style={{ color: '#f7768e' }} />
+              Budget Categories
+              {activeTab === 'yearly' && (
+                <select
+                  value={yearlyYear}
+                  onChange={e => setYearlyYear(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer ml-2"
+                >
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
             </h3>
             <button onClick={addCategory} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(247,118,142,0.12)', color: '#f7768e' }}>
               <Plus size={12} /> Add
