@@ -59,22 +59,12 @@ interface Props {
 }
 
 export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'monthly' | 'quarterly' | 'yearly'>('overview');
+  const [activeTab, setActiveTab] = useState<'monthly' | 'yearly'>('monthly');
   const [yearlyTextMap, setYearlyTextMap] = useState<Record<string, string>>({});
   const [yearlyYear, setYearlyYear] = useState(new Date().getFullYear().toString());
   const [clearExistingYearly, setClearExistingYearly] = useState(false);
-  const [globalMonth, setGlobalMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
-  const [globalQuarter, setGlobalQuarter] = useState(`Q${Math.floor(new Date().getMonth() / 3) + 1}`);
-
   const yearlyText = yearlyTextMap[yearlyYear] || '';
   const setYearlyText = (text: string) => setYearlyTextMap(prev => ({ ...prev, [yearlyYear]: text }));
-  const [quarterlyTextMap, setQuarterlyTextMap] = useState<Record<string, string>>({});
-  const quarterlyText = quarterlyTextMap[`${yearlyYear}-${globalQuarter}`] || '';
-  const setQuarterlyText = (text: string) => setQuarterlyTextMap(prev => ({ ...prev, [`${yearlyYear}-${globalQuarter}`]: text }));
-
-  const [monthlyTextMap, setMonthlyTextMap] = useState<Record<string, string>>({});
-  const monthlyText = monthlyTextMap[`${yearlyYear}-${globalMonth}`] || '';
-  const setMonthlyText = (text: string) => setMonthlyTextMap(prev => ({ ...prev, [`${yearlyYear}-${globalMonth}`]: text }));
 
   const availableYears = useMemo(() => {
     const years = [];
@@ -91,21 +81,6 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [addingCategoryIndex, setAddingCategoryIndex] = useState<number | null>(null);
-
-
-  const overviewPieData = useMemo(() => {
-    const totals: Record<string, number> = {};
-    const currentYear = new Date().getFullYear().toString();
-    for (const t of data.transactions) {
-      if (t.date.startsWith(currentYear)) {
-        totals[t.categoryId] = (totals[t.categoryId] || 0) + t.amount;
-      }
-    }
-    return data.expenseCategories
-      .map(c => ({ name: c.name, value: totals[c.id] || 0, color: c.color }))
-      .filter(c => c.value > 0)
-      .sort((a,b) => b.value - a.value);
-  }, [data.transactions, data.expenseCategories]);
 
   const pieData = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -135,12 +110,12 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     expenseCategories: [...d.expenseCategories, { id: uid(), name: 'New Category', budget: 0, color: '#7aa2f7', lastUpdatedDate: new Date().toISOString().slice(0, 10) }],
   }));
 
-  const removeCategory = (id: string) => updateData(d => ({ 
-    ...d, 
+  const removeCategory = (id: string) => updateData(d => ({
+    ...d,
     expenseCategories: d.expenseCategories.filter(e => e.id !== id),
     transactions: d.transactions.filter(t => t.categoryId !== id)
   }));
-  
+
   const removeTransaction = (id: string) => updateData(d => ({
     ...d,
     transactions: d.transactions.filter(t => t.id !== id)
@@ -148,87 +123,16 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
 
   const totalBudget = data.expenseCategories.reduce((s, e) => s + e.budget, 0);
 
-
-  const mtdActuals = useMemo(() => {
-    const actuals: Record<string, number> = {};
-    for (const cat of data.expenseCategories) actuals[cat.id] = 0;
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    for (const t of data.transactions) {
-      if (t.date.startsWith(currentMonth) && actuals[t.categoryId] !== undefined) {
-        actuals[t.categoryId] += t.amount;
-      }
-    }
-    return actuals;
-  }, [data.transactions, data.expenseCategories]);
-
-  const qtdActuals = useMemo(() => {
-    const actuals: Record<string, number> = {};
-    for (const cat of data.expenseCategories) actuals[cat.id] = 0;
-    const now = new Date();
-    const currentYear = now.getFullYear().toString();
-    const currentQ = `Q${Math.floor(now.getMonth() / 3) + 1}`;
-    for (const t of data.transactions) {
-      if (t.date.startsWith(currentYear)) {
-        const month = parseInt(t.date.slice(5, 7));
-        const q = `Q${Math.floor((month - 1) / 3) + 1}`;
-        if (q === currentQ && actuals[t.categoryId] !== undefined) {
-          actuals[t.categoryId] += t.amount;
-        }
-      }
-    }
-    return actuals;
-  }, [data.transactions, data.expenseCategories]);
-
-  const ytdActuals = useMemo(() => {
-    const actuals: Record<string, number> = {};
-    for (const cat of data.expenseCategories) actuals[cat.id] = 0;
-    const currentYear = new Date().getFullYear().toString();
-    for (const t of data.transactions) {
-      if (t.date.startsWith(currentYear) && actuals[t.categoryId] !== undefined) {
-        actuals[t.categoryId] += t.amount;
-      }
-    }
-    return actuals;
-  }, [data.transactions, data.expenseCategories]);
-
-  const mtdChartData = data.expenseCategories.map(c => ({
-    name: c.name,
-    budget: c.budget,
-    actual: mtdActuals[c.id] || 0,
-    color: c.color
-  }));
-
-  const qtdChartData = data.expenseCategories.map(c => ({
-    name: c.name,
-    budget: c.budget * 3,
-    actual: qtdActuals[c.id] || 0,
-    color: c.color
-  }));
-
-  const mtdTotalActual = useMemo(() => Object.values(mtdActuals).reduce((a,b)=>a+b, 0), [mtdActuals]);
-  const qtdTotalActual = useMemo(() => Object.values(qtdActuals).reduce((a,b)=>a+b, 0), [qtdActuals]);
-  const ytdTotalActual = useMemo(() => Object.values(ytdActuals).reduce((a,b)=>a+b, 0), [ytdActuals]);
-
   // Calculate actuals per category based on active tab
   const categoryActuals = useMemo(() => {
     const actuals: Record<string, number> = {};
     for (const cat of data.expenseCategories) actuals[cat.id] = 0;
-    
+
     if (activeTab === 'monthly') {
-      const selectedMonth = `${yearlyYear}-${globalMonth}`;
+      const currentMonth = new Date().toISOString().slice(0, 7);
       for (const t of data.transactions) {
-        if (t.date.startsWith(selectedMonth) && actuals[t.categoryId] !== undefined) {
+        if (t.date.startsWith(currentMonth) && actuals[t.categoryId] !== undefined) {
           actuals[t.categoryId] += t.amount;
-        }
-      }
-    } else if (activeTab === 'quarterly') {
-      for (const t of data.transactions) {
-        if (t.date.startsWith(yearlyYear)) {
-          const month = parseInt(t.date.slice(5, 7));
-          const q = `Q${Math.floor((month - 1) / 3) + 1}`;
-          if (q === globalQuarter && actuals[t.categoryId] !== undefined) {
-            actuals[t.categoryId] += t.amount;
-          }
         }
       }
     } else {
@@ -239,19 +143,12 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
       }
     }
     return actuals;
-  }, [data.transactions, data.expenseCategories, activeTab, yearlyYear, globalMonth, globalQuarter]);
-
-
-  const totalActual = useMemo(() => {
-    let sum = 0;
-    for (const v of Object.values(categoryActuals)) sum += v;
-    return sum;
-  }, [categoryActuals]);
+  }, [data.transactions, data.expenseCategories, activeTab, yearlyYear]);
 
   // Data for the Bar Chart
   const chartData = data.expenseCategories.map(c => ({
     name: c.name,
-    budget: activeTab === 'quarterly' ? c.budget * 3 : activeTab === 'yearly' ? c.budget * 12 : c.budget,
+    budget: c.budget,
     actual: categoryActuals[c.id] || 0,
     color: c.color
   }));
@@ -323,13 +220,14 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     }
   };
 
-  const processSummaryText = (text: string, defaultDate: string, onSuccess: () => void) => {
-    if (!text.trim()) return;
-    const parsed = parseYearlySummaryText(text, defaultDate, data.expenseCategories);
+  const handleProcessYearly = () => {
+    if (!yearlyText.trim()) return;
+    const parsed = parseYearlySummaryText(yearlyText, yearlyYear, data.expenseCategories);
 
     let currentCategories = [...data.expenseCategories];
     let categoriesChanged = false;
 
+    // Ensure 'Other' exists
     let otherCat = currentCategories.find(c => c.name.toLowerCase() === 'other');
     if (!otherCat) {
       otherCat = { id: uid(), name: 'Other', budget: 0, color: '#a9b1d6', lastUpdatedDate: new Date().toISOString().slice(0, 10) };
@@ -359,30 +257,8 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
       alert("No valid data found in text.");
     } else {
       setReviewItems(parsed);
-      onSuccess();
+      setYearlyText('');
     }
-  };
-
-  const getLastDay = (y: number, m: number) => new Date(y, m, 0).getDate();
-
-  const handleProcessMonthly = () => {
-    const y = parseInt(yearlyYear);
-    const m = parseInt(globalMonth);
-    const dateStr = `${yearlyYear}-${globalMonth}-${getLastDay(y, m).toString().padStart(2, '0')}`;
-    processSummaryText(monthlyText, dateStr, () => setMonthlyText(''));
-  };
-
-  const handleProcessQuarterly = () => {
-    const qNum = parseInt(globalQuarter.charAt(1));
-    const m = qNum * 3;
-    const y = parseInt(yearlyYear);
-    const dateStr = `${yearlyYear}-${m.toString().padStart(2, '0')}-${getLastDay(y, m).toString().padStart(2, '0')}`;
-    processSummaryText(quarterlyText, dateStr, () => setQuarterlyText(''));
-  };
-
-  const handleProcessYearly = () => {
-    const dateStr = `${yearlyYear}-12-31`;
-    processSummaryText(yearlyText, dateStr, () => setYearlyText(''));
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -395,11 +271,11 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
 
   const handleImport = () => {
     if (!reviewItems) return;
-    
+
     updateData(d => {
        const newTx: Transaction[] = [];
        const categoriesToClear = new Set<string>();
-       
+
        for (const item of reviewItems) {
           if (!item.suggestedCategoryId) continue;
           categoriesToClear.add(item.suggestedCategoryId);
@@ -414,14 +290,14 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
 
        let existingTxs = d.transactions;
        if (activeTab === 'yearly' && clearExistingYearly) {
-         existingTxs = existingTxs.filter(t => 
+         existingTxs = existingTxs.filter(t =>
            !(t.date.startsWith(yearlyYear) && categoriesToClear.has(t.categoryId))
          );
        }
 
        return { ...d, transactions: [...existingTxs, ...newTx] };
     });
-    
+
     setReviewItems(null);
     setClearExistingYearly(false); // Reset
   };
@@ -431,22 +307,10 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
       {/* Sub Tabs */}
       <div className="flex items-center gap-2 border-b border-border mb-4">
         <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'overview' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          Overview
-        </button>
-        <button
           onClick={() => setActiveTab('monthly')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'monthly' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           Monthly View
-        </button>
-        <button
-          onClick={() => setActiveTab('quarterly')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'quarterly' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          Quarterly View
         </button>
         <button
           onClick={() => setActiveTab('yearly')}
@@ -455,7 +319,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
           Yearly View
         </button>
       </div>
-      
+
       {/* Review Modal Overlay */}
       {reviewItems && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
@@ -473,7 +337,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                 <X size={20} className="text-muted-foreground" />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-0 custom-scrollbar bg-background/50">
               <table className="w-full text-sm">
                 <thead className="bg-[#1a1b26] sticky top-0 z-10">
@@ -606,146 +470,24 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
         </div>
       )}
 
-
-
       {/* Top Cards */}
-      {activeTab === 'overview' ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { label: 'MTD Spending', value: mtdTotalActual, budget: totalBudget, color: '#f7768e' },
-            { label: 'QTD Spending', value: qtdTotalActual, budget: totalBudget * 3, color: '#f7768e' },
-            { label: 'YTD Spending', value: ytdTotalActual, budget: totalBudget * 12, color: '#f7768e' },
-          ].map(s => (
-            <div key={s.label} className="glass-card p-5">
-              <div className="flex justify-between items-center mb-1">
-                <p className="text-xs" style={{ color: '#565f89' }}><Calendar size={12} className="inline mr-1 mb-0.5" />{s.label}</p>
-                <p className="text-xs" style={{ color: s.budget >= s.value ? '#9ece6a' : '#f7768e' }}>
-                  {s.budget >= s.value ? 'Under Budget' : 'Over Budget'}
-                </p>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: s.color }}>
-                {fmt.compact(s.value)} <span className="text-sm font-normal text-muted-foreground">/ {fmt.compact(s.budget)}</span>
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { label: activeTab === 'monthly' ? 'MTD Spending' : activeTab === 'quarterly' ? 'QTD Spending' : activeTab === 'yearly' ? 'YTD Spending' : 'Total Spending', value: totalActual, color: '#f7768e' },
-            { label: 'Total Budget',   value: activeTab === 'quarterly' ? totalBudget * 3 : activeTab === 'yearly' ? totalBudget * 12 : totalBudget,          color: '#7aa2f7' },
-            { label: 'Over/Under',     value: (activeTab === 'quarterly' ? totalBudget * 3 : activeTab === 'yearly' ? totalBudget * 12 : totalBudget) - totalActual, color: (activeTab === 'quarterly' ? totalBudget * 3 : activeTab === 'yearly' ? totalBudget * 12 : totalBudget) >= totalActual ? '#9ece6a' : '#f7768e' },
-          ].map(s => (
-            <div key={s.label} className="glass-card p-5">
-              <p className="text-xs mb-1" style={{ color: '#565f89' }}><Calendar size={12} className="inline mr-1 mb-0.5" />{s.label}</p>
-              <p className="text-2xl font-bold" style={{ color: s.color as string }}>
-                {s.label === 'Over/Under' && (s.value as number) >= 0 ? '+' : ''}{fmt.compact(s.value as number)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-      {activeTab === 'overview' && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* MTD vs Budget */}
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>MTD vs Budget</h3>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={mtdChartData} barSize={12} barGap={2}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
-                <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
-                <Bar dataKey="budget" name="Budget" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
-                  {mtdChartData.map((e, i) => <Cell key={i} fill={e.actual > e.budget ? '#f7768e' : e.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: 'MTD Spending', value: totalMonthlyExpenses, color: '#f7768e' },
+          { label: 'Total Budget',   value: totalBudget,          color: '#7aa2f7' },
+          { label: 'Over/Under',     value: totalBudget - totalMonthlyExpenses, color: totalBudget >= totalMonthlyExpenses ? '#9ece6a' : '#f7768e' },
+        ].map(s => (
+          <div key={s.label} className="glass-card p-5">
+            <p className="text-xs mb-1" style={{ color: '#565f89' }}><Calendar size={12} className="inline mr-1 mb-0.5" />{s.label}</p>
+            <p className="text-2xl font-bold" style={{ color: s.color }}>
+              {s.label === 'Over/Under' && s.value >= 0 ? '+' : ''}{fmt.compact(s.value)}
+            </p>
           </div>
+        ))}
+      </div>
 
-          {/* QTD vs Budget */}
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>QTD vs Budget</h3>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={qtdChartData} barSize={12} barGap={2}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
-                <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
-                <Bar dataKey="budget" name="Budget" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
-                  {qtdChartData.map((e, i) => <Cell key={i} fill={e.actual > e.budget ? '#f7768e' : e.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
 
-          {/* Historical Graph */}
-          {showHistoricalGraph && (
-            <div className="glass-card p-5 md:col-span-2">
-              <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Spending Over Time</h3>
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={historicalData}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
-                  <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis hide domain={['auto', 'auto']} />
-                  <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                  <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
-                  <Line type="monotone" dataKey="actual" name="Actual" stroke="#f7768e" strokeWidth={2} dot={{ r: 3, fill: '#f7768e', strokeWidth: 0 }} />
-                  <Line type="monotone" dataKey="budget" name="Budget" stroke="#7aa2f7" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Pie Chart & Historical Comparison */}
-          <div className="glass-card p-5 md:col-span-2 grid grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>YTD Category Breakdown</h3>
-              </div>
-              <div className="h-[200px]">
-                {overviewPieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5', fontSize: '12px' }} />
-                      <Pie data={overviewPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={70} stroke="none">
-                        {overviewPieData.map((e, i) => <PieCell key={i} fill={e.color} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No data for YTD</div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: '#c0caf5' }}>Year-over-Year Spending</h3>
-              <div className="h-[200px]">
-                {yearlyHistoricalData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={yearlyHistoricalData} barSize={20}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
-                      <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis hide domain={['auto', 'auto']} />
-                      <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                      <Bar dataKey="actual" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No historical data</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-{activeTab === 'monthly' && (
+      {activeTab === 'monthly' ? (
         <div className={`grid gap-6 ${showHistoricalGraph ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
           {/* PDF Dropzone */}
           <div
@@ -770,32 +512,15 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isParsing}
-              className="px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-bold w-full mb-4"
+              className="px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-bold w-full"
             >
               {isParsing ? 'Scanning PDF...' : 'Select PDF File'}
             </button>
-
-            <div className="w-full text-left mt-2 border-t border-border pt-4">
-              <h3 className="text-sm font-bold text-primary mb-1">Or Paste Summary</h3>
-              <textarea
-                value={monthlyText}
-                onChange={e => setMonthlyText(e.target.value)}
-                placeholder="Paste text summary here..."
-                className="w-full bg-black/40 border border-border rounded-lg p-2 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[80px]"
-              />
-              <button
-                onClick={handleProcessMonthly}
-                disabled={!monthlyText.trim()}
-                className="mt-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-bold w-full disabled:opacity-50"
-              >
-                Process Text
-              </button>
-            </div>
           </div>
 
           {/* Bar chart - MTD */}
           <div className={`glass-card p-5 ${showHistoricalGraph ? 'md:col-span-2' : 'md:col-span-2'}`}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Current Period vs Budget</h3>
+            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Current MTD vs Budget</h3>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={chartData} barSize={12} barGap={2}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
@@ -829,61 +554,30 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             </div>
           )}
         </div>
-      )}
-
-      {activeTab === 'quarterly' && (
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Quarterly Import Box */}
-          <div className="glass-card p-6 flex flex-col md:col-span-1">
-            <h3 className="text-sm font-bold text-primary mb-1">Import Quarterly Summary</h3>
-            <p className="text-xs text-muted-foreground mb-4">Paste your quarterly summary text here.</p>
-
-            <textarea
-              value={quarterlyText}
-              onChange={e => setQuarterlyText(e.target.value)}
-              placeholder="e.g.\nHome Show details $31,932.20"
-              className="flex-1 bg-black/40 border border-border rounded-lg p-3 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[120px]"
-            />
-
-            <button
-              onClick={handleProcessQuarterly}
-              disabled={!quarterlyText.trim()}
-              className="mt-4 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-bold w-full disabled:opacity-50"
-            >
-              Process Summary
-            </button>
-          </div>
-
-          <div className="glass-card p-5 md:col-span-2">
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Current Period vs Budget</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData} barSize={20} barGap={2}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
-                <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
-                <Bar dataKey="budget" name="Budget (Quarterly)" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
-                  {chartData.map((e, i) => <Cell key={i} fill={e.actual > e.budget ? '#f7768e' : e.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'yearly' && (
+      ) : (
         <div className="grid gap-6 md:grid-cols-3">
           {/* Yearly Import Box */}
           <div className="glass-card p-6 flex flex-col md:col-span-1">
             <h3 className="text-sm font-bold text-primary mb-1">Import Yearly Summary</h3>
             <p className="text-xs text-muted-foreground mb-4">Paste your year-end summary text or raw transaction list here.</p>
 
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs text-muted-foreground">Year:</span>
+              <select
+                value={yearlyYear}
+                onChange={e => setYearlyYear(e.target.value)}
+                className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer w-24"
+              >
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+
             <textarea
               value={yearlyText}
               onChange={e => setYearlyText(e.target.value)}
-              placeholder="e.g.\nHome Show details $31,932.20\nor\nDec 31, 2025 ... $75.00"
+              placeholder="e.g.&#10;Home Show details $31,932.20&#10;or&#10;Dec 31, 2025 ... $75.00"
               className="flex-1 bg-black/40 border border-border rounded-lg p-3 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[120px]"
             />
 
@@ -952,45 +646,22 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
           </div>
         </div>
       )}
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Table - Budget Categories */}
         <div className="glass-card p-5 flex flex-col h-[400px]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#c0caf5' }}>
-              <TrendingDown size={16} style={{ color: '#f7768e' }} /> 
+              <TrendingDown size={16} style={{ color: '#f7768e' }} />
               Budget Categories
-              <select
-                value={yearlyYear}
-                onChange={e => setYearlyYear(e.target.value)}
-                className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer ml-2"
-              >
-                {availableYears.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-
-              {activeTab === 'monthly' && (
+              {activeTab === 'yearly' && (
                 <select
-                  value={globalMonth}
-                  onChange={e => setGlobalMonth(e.target.value)}
-                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer ml-1"
+                  value={yearlyYear}
+                  onChange={e => setYearlyYear(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer ml-2"
                 >
-                  {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                    <option key={m} value={m.toString().padStart(2, '0')}>
-                      {new Date(2000, m - 1, 1).toLocaleString('default', { month: 'short' })}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {activeTab === 'quarterly' && (
-                <select
-                  value={globalQuarter}
-                  onChange={e => setGlobalQuarter(e.target.value)}
-                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer ml-1"
-                >
-                  {['Q1', 'Q2', 'Q3', 'Q4'].map(q => (
-                    <option key={q} value={q}>{q}</option>
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>{y}</option>
                   ))}
                 </select>
               )}
@@ -1003,7 +674,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="sticky top-0 bg-[#1a1b26] z-10" style={{ borderBottom: '1px solid #1e2030' }}>
-                  {['Category', activeTab === 'monthly' ? 'Monthly Actual' : activeTab === 'quarterly' ? 'QTD Actual' : `${yearlyYear} Actual`, 'Budget', ''].map((h, i) => (
+                  {['Category', activeTab === 'monthly' ? 'MTD Actual' : `${yearlyYear} Actual`, 'Budget', activeTab === 'monthly' ? 'Last Updated' : '', ''].map((h, i) => (
                     <th key={i} className="text-left py-2 px-2 text-xs font-medium" style={{ color: '#565f89' }}>{h}</th>
                   ))}
                 </tr>
@@ -1013,64 +684,21 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                   const actual = categoryActuals[exp.id] || 0;
                   const over = actual > exp.budget && exp.budget > 0;
                   const todayStr = new Date().toISOString().slice(0, 10);
-                  
+
                   const handleActualAdd = (newAmount: number) => {
                     if (newAmount === 0 || isNaN(newAmount)) return;
-
-                    // Function to get last day of month
-                    const getLastDay = (y: number, m: number) => new Date(y, m, 0).getDate();
-
                     if (activeTab === 'monthly') {
-                      const y = parseInt(yearlyYear);
-                      const m = parseInt(globalMonth);
-                      const lastDay = getLastDay(y, m);
-                      const dateStr = `${yearlyYear}-${globalMonth}-${lastDay.toString().padStart(2, '0')}`;
-
                       updateData(d => ({
                         ...d,
                         transactions: [...d.transactions, {
                           id: uid(),
-                          date: dateStr,
+                          date: exp.lastUpdatedDate || todayStr,
                           description: 'Manual Entry',
                           amount: newAmount,
                           categoryId: exp.id,
-                        }]
+                        }],
+                        expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
                       }));
-                    } else if (activeTab === 'quarterly') {
-                      const isRecurring = window.confirm(`Is this ${fmt.currency(newAmount)} expense recurring monthly for ${globalQuarter} ${yearlyYear}?\n\nOK = Recurring (Creates 3 monthly transactions)\nCancel = One-Time (Creates 1 transaction for the quarter)`);
-                      updateData(d => {
-                        const newTxs = [];
-                        const qNum = parseInt(globalQuarter.charAt(1));
-                        if (isRecurring) {
-                          for (let i = 0; i < 3; i++) {
-                            const m = (qNum - 1) * 3 + i + 1;
-                            const y = parseInt(yearlyYear);
-                            const lastDay = getLastDay(y, m);
-                            newTxs.push({
-                              id: uid(),
-                              date: `${yearlyYear}-${m.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`,
-                              description: 'Manual Recurring Entry',
-                              amount: newAmount,
-                              categoryId: exp.id,
-                            });
-                          }
-                        } else {
-                          const m = qNum * 3;
-                          const y = parseInt(yearlyYear);
-                          const lastDay = getLastDay(y, m);
-                          newTxs.push({
-                            id: uid(),
-                            date: `${yearlyYear}-${m.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`,
-                            description: 'Manual One-Time Entry',
-                            amount: newAmount,
-                            categoryId: exp.id,
-                          });
-                        }
-                        return {
-                          ...d,
-                          transactions: [...d.transactions, ...newTxs]
-                        };
-                      });
                     } else {
                       const isRecurring = window.confirm(`Is this ${fmt.currency(newAmount)} expense recurring monthly for ${yearlyYear}?
 
@@ -1101,20 +729,21 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                         return {
                           ...d,
                           transactions: [...d.transactions, ...newTxs],
-
+                          expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
                         };
                       });
                     }
                   };
 
                   const handleBudgetEdit = (v: number) => {
-                    updateData(d => ({ 
-                      ...d, 
-                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, budget: v } : c)
+                    updateData(d => ({
+                      ...d,
+                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, budget: v, lastUpdatedDate: todayStr } : c)
                     }));
                   };
 
-
+                  const daysSinceUpdate = exp.lastUpdatedDate ? Math.floor((new Date().getTime() - new Date(exp.lastUpdatedDate).getTime()) / (1000 * 3600 * 24)) : 0;
+                  const oldData = daysSinceUpdate >= 30;
 
                   return (
                     <tr key={exp.id} style={{ borderBottom: '1px solid #1e203060' }}>
@@ -1133,7 +762,22 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                       <td className="py-2 px-2">
                         <EditableValue value={exp.budget} size="sm" onChange={handleBudgetEdit} />
                       </td>
-
+                      <td className="py-2 px-2">
+                        {activeTab === 'monthly' && (
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1">
+                            <Calendar size={12} className="text-muted-foreground" />
+                            <input
+                              type="date"
+                              className="bg-transparent border-0 text-xs text-muted-foreground focus:outline-none p-0 w-[100px]"
+                              value={exp.lastUpdatedDate || todayStr}
+                              onChange={e => updateData(d => ({ ...d, expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: e.target.value } : c) }))}
+                            />
+                          </div>
+                          {oldData && <span className="text-[10px] text-destructive leading-tight mt-0.5" title={`${daysSinceUpdate} days ago`}>Edited {Math.floor(daysSinceUpdate / 30)} mo ago</span>}
+                        </div>
+                        )}
+                      </td>
                       <td className="py-2 px-2 text-right">
                         <button onClick={() => removeCategory(exp.id)} className="p-1 rounded hover:bg-red-900/20">
                           <Trash2 size={12} style={{ color: '#f7768e' }} />
@@ -1169,17 +813,17 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                   const cat = data.expenseCategories.find(c => c.id === tx.categoryId);
                   return (
                     <tr key={tx.id} className="hover:bg-white/5 transition-colors border-b border-white/5">
-                      <td className="py-2 px-2 text-xs text-muted-foreground whitespace-nowrap">{tx.date}</td>
+                      <td className="py-2 px-2 text-xs text-muted-foreground whitespace-nowrap">{tx.date.slice(5)}</td>
                       <td className="py-2 px-2">
                         <input value={tx.description} onChange={e => updateData(d => ({ ...d, transactions: d.transactions.map(t => t.id === tx.id ? { ...t, description: e.target.value } : t) }))}
                           className="bg-transparent border-0 p-0 text-xs w-full font-medium focus:outline-none focus:text-primary" style={{ color: '#c0caf5' }} />
                       </td>
                       <td className="py-2 px-2">
-                        <EditableValue value={tx.amount} size="sm" 
+                        <EditableValue value={tx.amount} size="sm"
                           onChange={v => updateData(d => ({ ...d, transactions: d.transactions.map(t => t.id === tx.id ? { ...t, amount: v } : t) }))} />
                       </td>
                       <td className="py-2 px-2">
-                        <select 
+                        <select
                           className="bg-transparent text-xs w-24 max-w-[100px] border-0 outline-none truncate" style={{ color: cat?.color || '#a9b1d6' }}
                           value={tx.categoryId}
                           onChange={e => updateData(d => ({ ...d, transactions: d.transactions.map(t => t.id === tx.id ? { ...t, categoryId: e.target.value } : t) }))}
