@@ -7,10 +7,10 @@ interface Props {
   data: FinancialData;
   totalNetWorth: number;
   totalContributions: number;
-  annualExpenses: number;
+  estimatedAnnualExpenses: number;
 }
 
-export function RetirementAnalysisTab({ data, totalNetWorth, totalContributions, annualExpenses }: Props) {
+export function RetirementAnalysisTab({ data, totalNetWorth, totalContributions, estimatedAnnualExpenses }: Props) {
   const pi = data.personalInfo;
   const currentAge = pi.age;
   const rAge = pi.retirementAge;
@@ -28,7 +28,7 @@ export function RetirementAnalysisTab({ data, totalNetWorth, totalContributions,
       balance = balance * (1 + realReturn / 100) + annualContrib;
     } else {
       // Decumulation phase (withdrawing expenses)
-      balance = balance * (1 + realReturn / 100) - annualExpenses;
+      balance = balance * (1 + realReturn / 100) - estimatedAnnualExpenses;
     }
   }
 

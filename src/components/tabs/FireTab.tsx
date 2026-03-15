@@ -8,12 +8,12 @@ interface Props {
   updateData: (fn: (p: FinancialData) => FinancialData) => void;
   totalNetWorth: number;
   totalGrossIncome: number;
-  totalMonthlyExpenses: number;
+  estimatedAnnualExpenses: number;
 }
 
-export function FireTab({ data, updateData, totalNetWorth, totalGrossIncome, totalMonthlyExpenses }: Props) {
+export function FireTab({ data, updateData, totalNetWorth, totalGrossIncome, estimatedAnnualExpenses }: Props) {
   const pi = data.personalInfo;
-  const annualExpenses = totalMonthlyExpenses * 12;
+  const annualExpenses = estimatedAnnualExpenses;
   const fireNumber = annualExpenses / (pi.safeWithdrawalRate / 100);
   const leanFire = annualExpenses * 0.75 / (pi.safeWithdrawalRate / 100);
   const fatFire  = annualExpenses * 1.5  / (pi.safeWithdrawalRate / 100);
