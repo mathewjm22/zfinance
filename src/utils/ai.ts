@@ -3,7 +3,7 @@ import { AzureKeyCredential } from "@azure/core-auth";
 
 export async function estimateCategoryInflation(categoryName: string): Promise<number | null> {
   const token = (import.meta as any).env.VITE_GITHUB_TOKEN;
-
+  
   if (!token) {
     console.error("VITE_GITHUB_TOKEN is not set in environment variables.");
     return null;
@@ -38,7 +38,7 @@ export async function estimateCategoryInflation(categoryName: string): Promise<n
 
     const content = response.body.choices[0].message.content?.trim();
     if (!content) return null;
-
+    
     // Parse the float, stripping out any non-numeric characters just in case the AI didn't listen perfectly
     const match = content.match(/[\d.]+/);
     if (match) {

@@ -18,3 +18,5 @@
 7:39:03 PM [vite] (client) hmr update /src/index.css, /src/components/tabs/ExpensesTab.tsx
 7:40:08 PM [vite] (client) hmr update /src/App.tsx, /src/index.css, /src/components/tabs/EditDataTab.tsx
 7:40:35 PM [vite] (client) hmr update /src/index.css, /src/components/tabs/ExpensesTab.tsx
+7:59:29 PM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
+8:00:00 PM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css

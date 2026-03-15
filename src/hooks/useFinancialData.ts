@@ -82,10 +82,10 @@ export function useFinancialData() {
       } else {
         // Calculate historical average
         const catTxs = (data.transactions || []).filter(t => t.categoryId === cat.id);
-
+        
         let totalSpent = 0;
         const yearsWithData = new Set<string>();
-
+        
         catTxs.forEach(t => {
           totalSpent += t.amount;
           yearsWithData.add(t.date.slice(0, 4));
@@ -103,7 +103,7 @@ export function useFinancialData() {
       // We calculate the future cost at retirement by compounding inflation over the years until retirement
       // Note: The FIRE number calculation usually works in "today's dollars" (which inflation adjusts the target),
       // but to accurately factor in category-specific inflation vs. generic inflation, we could adjust the relative weights here.
-      // However, for simplicity and alignment with standard FIRE models, we will provide the "Today's Dollars"
+      // However, for simplicity and alignment with standard FIRE models, we will provide the "Today's Dollars" 
       // equivalent of their estimated retirement spend, while allowing the UI to show they've considered inflation.
       // Since the user specifically wanted to factor in that some costs rise faster than others,
       // we will compute the future inflated cost at retirement, then deflate it back to today's dollars using the global inflation rate,

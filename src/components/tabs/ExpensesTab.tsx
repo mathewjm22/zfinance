@@ -1306,35 +1306,54 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
               </thead>
               <tbody>
                 {data.expenseCategories.map(exp => {
-                  const isRetiree = exp.isRetirement !== false;
+                  return (
+                    <RetirementCategoryRow
+                      key={exp.id}
+                      exp={exp}
+                      data={data}
+                      updateData={updateData}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-                  // Calculate historical average annual spend for this category
-                  let totalSpent = 0;
-                  const yearsWithData = new Set<string>();
-                  for (const t of data.transactions) {
-                    if (t.categoryId === exp.id) {
-                      totalSpent += t.amount;
-                      yearsWithData.add(t.date.slice(0, 4));
-                    }
-                  }
-                  const numYears = Math.max(1, yearsWithData.size);
-                  const historicalAverage = totalSpent / numYears;
+function RetirementCategoryRow({ exp, data, updateData }: { exp: ExpenseCategory, data: FinancialData, updateData: (fn: (p: FinancialData) => FinancialData) => void }) {
+  const isRetiree = exp.isRetirement !== false;
+                  
+  // Calculate historical average annual spend for this category
+  let totalSpent = 0;
+  const yearsWithData = new Set<string>();
+  for (const t of data.transactions) {
+    if (t.categoryId === exp.id) {
+      totalSpent += t.amount;
+      yearsWithData.add(t.date.slice(0, 4));
+    }
+  }
+  const numYears = Math.max(1, yearsWithData.size);
+  const historicalAverage = totalSpent / numYears;
 
-                  const currentOverride = exp.retirementAnnualOverride;
-                  const displayCost = currentOverride !== undefined ? currentOverride : historicalAverage;
+  const currentOverride = exp.retirementAnnualOverride;
+  const displayCost = currentOverride !== undefined ? currentOverride : historicalAverage;
 
-                  const inflationRate = exp.retirementInflationRate !== undefined ? exp.retirementInflationRate : data.personalInfo.inflationRate;
+  const inflationRate = exp.retirementInflationRate !== undefined ? exp.retirementInflationRate : data.personalInfo.inflationRate;
 
-                  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
 
-                  const handleAIEstimate = async () => {
+  const handleAIEstimate = async () => {
                     setIsLoadingAI(true);
                     try {
                       const est = await estimateCategoryInflation(exp.name);
                       if (est !== null) {
                         updateData(d => ({
                           ...d,
-                          expenseCategories: d.expenseCategories.map(c =>
+                          expenseCategories: d.expenseCategories.map(c => 
                             c.id === exp.id ? { ...c, retirementInflationRate: est } : c
                           )
                         }));
@@ -1355,9 +1374,9 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                         </div>
                       </td>
                       <td className="py-3 px-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isRetiree}
+                        <input 
+                          type="checkbox" 
+                          checked={isRetiree} 
                           onChange={(e) => updateData(d => ({
                             ...d,
                             expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, isRetirement: e.target.checked } : c)
@@ -1367,8 +1386,8 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                       </td>
                       <td className="py-3 px-2 text-right">
                         <div className={`transition-opacity ${!isRetiree ? 'opacity-30 pointer-events-none' : ''}`}>
-                          <EditableValue
-                            value={displayCost}
+                          <EditableValue 
+                            value={displayCost} 
                             onChange={(v) => updateData(d => ({
                               ...d,
                               expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, retirementAnnualOverride: v } : c)
@@ -1381,9 +1400,9 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                       </td>
                       <td className="py-3 px-2 text-right">
                         <div className={`transition-opacity ${!isRetiree ? 'opacity-30 pointer-events-none' : ''}`}>
-                          <EditableValue
-                            value={inflationRate}
-                            suffix="%"
+                          <EditableValue 
+                            value={inflationRate} 
+                            suffix="%" 
                             onChange={(v) => updateData(d => ({
                               ...d,
                               expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, retirementInflationRate: v } : c)
@@ -1395,7 +1414,7 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                         </div>
                       </td>
                       <td className="py-3 px-2 text-center">
-                         <button
+                         <button 
                            onClick={handleAIEstimate}
                            disabled={isLoadingAI || !isRetiree}
                            title="Use AI to estimate inflation rate for this category"
@@ -1405,13 +1424,5 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                          </button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

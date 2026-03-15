@@ -13,7 +13,7 @@ def verify_changes():
         # 1. Navigate to the app
         page.goto("http://localhost:3000/")
         page.wait_for_selector("text=Net Worth")
-
+        
         # 2. Go to Expenses Tab
         page.locator("button:has-text('Expenses')").first.click()
         page.wait_for_selector("text=Overview")
@@ -23,7 +23,7 @@ def verify_changes():
         page.locator("button:has-text('Yearly View')").click()
         time.sleep(1)
         page.screenshot(path="verification_debug2.png")
-
+        
         page.wait_for_selector("text=Retirement Expense Projections")
         page.screenshot(path="verification_yearly_view.png", full_page=True)
 
@@ -31,7 +31,7 @@ def verify_changes():
         page.locator("button:has-text('F.I.R.E.')").first.click()
         page.wait_for_selector("text=Estimated Retirement Expenses")
         time.sleep(1)
-
+        
         # 6. Take a screenshot of the FIRE Tab
         page.screenshot(path="verification_fire_tab.png", full_page=True)
 
