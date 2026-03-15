@@ -60,6 +60,46 @@ export function useFinancialData() {
     .filter(t => t.date.startsWith(currentMonth))
     .reduce((s, t) => s + t.amount, 0);
 
+  // First calculate the global number of active months per year across all transactions
+  const activeMonthsPerYear: Record<string, Set<string>> = {};
+  (data.transactions || []).forEach(t => {
+    const year = t.date.slice(0, 4);
+    const month = t.date.slice(0, 7);
+    if (!activeMonthsPerYear[year]) activeMonthsPerYear[year] = new Set();
+    activeMonthsPerYear[year].add(month);
+  });
+
+  // Calculate estimated annual expenses by finding the highest extrapolated year per category
+  const estimatedAnnualExpenses = (data.expenseCategories || []).reduce((totalEst, cat) => {
+    // Group transactions by year and month
+    const yearlyTotals: Record<string, number> = {};
+    const catTxs = (data.transactions || []).filter(t => t.categoryId === cat.id);
+
+    catTxs.forEach(t => {
+      const year = t.date.slice(0, 4);
+      yearlyTotals[year] = (yearlyTotals[year] || 0) + t.amount;
+    });
+
+    let maxAnnualForCat = 0;
+    Object.entries(yearlyTotals).forEach(([year, total]) => {
+      const numMonths = activeMonthsPerYear[year]?.size || 0;
+      if (numMonths > 0) {
+        // Extrapolate to full year based on the *global* active months for that year
+        const extrapolated = (total / numMonths) * 12;
+        if (extrapolated > maxAnnualForCat) {
+          maxAnnualForCat = extrapolated;
+        }
+      }
+    });
+
+    // If no transactions exist for this category, we might want to fall back to the monthly budget * 12
+    if (maxAnnualForCat === 0 && cat.budget > 0) {
+      maxAnnualForCat = cat.budget * 12;
+    }
+
+    return totalEst + maxAnnualForCat;
+  }, 0);
+
   const totalContributions = (data.retirementContributions || []).reduce(
     (s, c) => s + c.monthlyAmount + (c.monthlyAmount * (c.employerMatch || 0) / 100),
     0
@@ -88,6 +128,7 @@ export function useFinancialData() {
     totalMonthlyIncome,
     totalGrossIncome,
     totalMonthlyExpenses,
+    estimatedAnnualExpenses,
     totalContributions,
     monthlyNet,
     savingsRate,

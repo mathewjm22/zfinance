@@ -12,6 +12,7 @@ interface Props {
   totalNetWorth: number;
   totalMonthlyIncome: number;
   totalMonthlyExpenses: number;
+  estimatedAnnualExpenses: number;
   monthlyNet: number;
   savingsRate: number;
   yearsToRetirement: number;
@@ -21,7 +22,7 @@ interface Props {
 }
 
 export function OverviewTab({
-  data, updateData, totalNetWorth, totalMonthlyIncome, totalMonthlyExpenses,
+  data, updateData, totalNetWorth, totalMonthlyIncome, totalMonthlyExpenses, estimatedAnnualExpenses,
   monthlyNet, savingsRate, yearsToRetirement, netWorthProgress, totalContributions, projectedAtRetirement,
 }: Props) {
   const cashFlowData = [
@@ -57,6 +58,11 @@ export function OverviewTab({
             label: 'Monthly Net', icon: <PiggyBank size={16} />, color: monthlyNet >= 0 ? '#9ece6a' : '#f7768e',
             value: monthlyNet, sub: 'Income – Expenses',
             badge: monthlyNet >= 0 ? 'Positive' : 'Negative', badgeCls: monthlyNet >= 0 ? 'chip-success' : 'chip-danger',
+          },
+          {
+            label: 'Est. Annual Expenses', icon: <TrendingDown size={16} />, color: '#e0af68',
+            value: estimatedAnnualExpenses, sub: 'Used for FIRE & Retirement',
+            badge: 'Calculated', badgeCls: 'chip-info',
           },
         ].map(kpi => (
           <div key={kpi.label} className="glass-card p-5">
