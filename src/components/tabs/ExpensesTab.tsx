@@ -92,6 +92,8 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [addingCategoryIndex, setAddingCategoryIndex] = useState<number | null>(null);
 
+  const [importMonth, setImportMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
+  const [importYear, setImportYear] = useState(new Date().getFullYear().toString());
 
   const overviewPieData = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -369,6 +371,8 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     const y = parseInt(yearlyYear);
     const m = parseInt(globalMonth);
     const dateStr = `${yearlyYear}-${globalMonth}-${getLastDay(y, m).toString().padStart(2, '0')}`;
+    setImportYear(yearlyYear);
+    setImportMonth(globalMonth);
     processSummaryText(monthlyText, dateStr, () => setMonthlyText(''));
   };
 
@@ -377,11 +381,15 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     const m = qNum * 3;
     const y = parseInt(yearlyYear);
     const dateStr = `${yearlyYear}-${m.toString().padStart(2, '0')}-${getLastDay(y, m).toString().padStart(2, '0')}`;
+    setImportYear(yearlyYear);
+    setImportMonth(m.toString().padStart(2, '0'));
     processSummaryText(quarterlyText, dateStr, () => setQuarterlyText(''));
   };
 
   const handleProcessYearly = () => {
     const dateStr = `${yearlyYear}-12-31`;
+    setImportYear(yearlyYear);
+    setImportMonth('12');
     processSummaryText(yearlyText, dateStr, () => setYearlyText(''));
   };
 
@@ -465,11 +473,66 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                 <h3 className="text-lg font-bold text-primary flex items-center gap-2">
                   <Check size={20} /> Review Scanned Transactions
                 </h3>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 mb-3">
                   We found {reviewItems.length} transactions. Edit the details and assign categories before importing.
                 </p>
+                <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-border/50 inline-flex">
+                  <span className="text-xs text-muted-foreground font-medium">Import Date:</span>
+                  <select
+                    value={importMonth}
+                    onChange={e => {
+                      const newMonth = e.target.value;
+                      setImportMonth(newMonth);
+                      if (reviewItems) {
+                        const newItems = reviewItems.map(item => {
+                          const dateParts = item.date.split('-');
+                          if (dateParts.length === 3) {
+                             const lastDay = new Date(parseInt(importYear), parseInt(newMonth), 0).getDate();
+                             const currentDay = parseInt(dateParts[2]);
+                             const newDay = currentDay > lastDay ? lastDay : currentDay;
+                             return { ...item, date: `${importYear}-${newMonth}-${newDay.toString().padStart(2, '0')}` };
+                          }
+                          return item;
+                        });
+                        setReviewItems(newItems);
+                      }
+                    }}
+                    className="bg-background border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                      <option key={m} value={m.toString().padStart(2, '0')}>
+                        {new Date(2000, m - 1, 1).toLocaleString('default', { month: 'short' })}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={importYear}
+                    onChange={e => {
+                      const newYear = e.target.value;
+                      setImportYear(newYear);
+                      if (reviewItems) {
+                        const newItems = reviewItems.map(item => {
+                          const dateParts = item.date.split('-');
+                          if (dateParts.length === 3) {
+                             const lastDay = new Date(parseInt(newYear), parseInt(importMonth), 0).getDate();
+                             const currentDay = parseInt(dateParts[2]);
+                             const newDay = currentDay > lastDay ? lastDay : currentDay;
+                             return { ...item, date: `${newYear}-${importMonth}-${newDay.toString().padStart(2, '0')}` };
+                          }
+                          return item;
+                        });
+                        setReviewItems(newItems);
+                      }
+                    }}
+                    className="bg-background border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    {availableYears.map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <button onClick={() => setReviewItems(null)} className="p-2 hover:bg-white/10 rounded-lg">
+              <button onClick={() => setReviewItems(null)} className="p-2 hover:bg-white/10 rounded-lg self-start">
                 <X size={20} className="text-muted-foreground" />
               </button>
             </div>
