@@ -60,8 +60,18 @@ interface Props {
 
 export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
   const [activeTab, setActiveTab] = useState<'monthly' | 'yearly'>('monthly');
-  const [yearlyText, setYearlyText] = useState('');
+  const [yearlyTextMap, setYearlyTextMap] = useState<Record<string, string>>({});
   const [yearlyYear, setYearlyYear] = useState(new Date().getFullYear().toString());
+  const [clearExistingYearly, setClearExistingYearly] = useState(false);
+  const yearlyText = yearlyTextMap[yearlyYear] || '';
+  const setYearlyText = (text: string) => setYearlyTextMap(prev => ({ ...prev, [yearlyYear]: text }));
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    years.add(new Date().getFullYear().toString());
+    data.transactions.forEach(t => years.add(t.date.slice(0, 4)));
+    return Array.from(years).sort((a,b) => b.localeCompare(a));
+  }, [data.transactions]);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -111,18 +121,27 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
 
   const totalBudget = data.expenseCategories.reduce((s, e) => s + e.budget, 0);
 
-  // Calculate actuals for current month per category
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  // Calculate actuals per category based on active tab
   const categoryActuals = useMemo(() => {
     const actuals: Record<string, number> = {};
     for (const cat of data.expenseCategories) actuals[cat.id] = 0;
-    for (const t of data.transactions) {
-      if (t.date.startsWith(currentMonth) && actuals[t.categoryId] !== undefined) {
-        actuals[t.categoryId] += t.amount;
+
+    if (activeTab === 'monthly') {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      for (const t of data.transactions) {
+        if (t.date.startsWith(currentMonth) && actuals[t.categoryId] !== undefined) {
+          actuals[t.categoryId] += t.amount;
+        }
+      }
+    } else {
+      for (const t of data.transactions) {
+        if (t.date.startsWith(yearlyYear) && actuals[t.categoryId] !== undefined) {
+          actuals[t.categoryId] += t.amount;
+        }
       }
     }
     return actuals;
-  }, [data.transactions, data.expenseCategories, currentMonth]);
+  }, [data.transactions, data.expenseCategories, activeTab, yearlyYear]);
 
   // Data for the Bar Chart
   const chartData = data.expenseCategories.map(c => ({
@@ -253,8 +272,11 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     
     updateData(d => {
        const newTx: Transaction[] = [];
+       const categoriesToClear = new Set<string>();
+
        for (const item of reviewItems) {
           if (!item.suggestedCategoryId) continue;
+          categoriesToClear.add(item.suggestedCategoryId);
           newTx.push({
             id: uid(),
             date: item.date,
@@ -263,10 +285,19 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             categoryId: item.suggestedCategoryId
           });
        }
-       return { ...d, transactions: [...d.transactions, ...newTx] };
+
+       let existingTxs = d.transactions;
+       if (activeTab === 'yearly' && clearExistingYearly) {
+         existingTxs = existingTxs.filter(t =>
+           !(t.date.startsWith(yearlyYear) && categoriesToClear.has(t.categoryId))
+         );
+       }
+
+       return { ...d, transactions: [...existingTxs, ...newTx] };
     });
     
     setReviewItems(null);
+    setClearExistingYearly(false); // Reset
   };
 
   return (
@@ -493,7 +524,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
                 <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
                 <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
                 <Bar dataKey="budget" name="Budget" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
@@ -512,7 +543,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
                   <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis hide domain={['auto', 'auto']} />
-                  <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                  <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
                   <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
                   <Line type="monotone" dataKey="actual" name="Actual" stroke="#f7768e" strokeWidth={2} dot={{ r: 3, fill: '#f7768e', strokeWidth: 0 }} />
                   <Line type="monotone" dataKey="budget" name="Budget" stroke="#7aa2f7" strokeWidth={2} dot={false} strokeDasharray="5 5" />
@@ -528,14 +559,16 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <h3 className="text-sm font-bold text-primary mb-1">Import Yearly Summary</h3>
             <p className="text-xs text-muted-foreground mb-4">Paste your year-end summary text or raw transaction list here.</p>
 
-            <div className="flex gap-2 mb-2">
-              <span className="text-xs text-muted-foreground flex items-center">Year:</span>
-              <input
-                type="text"
-                value={yearlyYear}
-                onChange={e => setYearlyYear(e.target.value)}
-                className="bg-black/40 border border-border rounded px-2 py-1 text-xs w-20 focus:outline-none focus:border-primary"
-              />
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
+              {availableYears.map(y => (
+                <button
+                  key={y}
+                  onClick={() => setYearlyYear(y)}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${yearlyYear === y ? 'bg-primary text-black font-bold' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                >
+                  {y}
+                </button>
+              ))}
             </div>
 
             <textarea
@@ -544,6 +577,19 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
               placeholder="e.g.&#10;Home Show details $31,932.20&#10;or&#10;Dec 31, 2025 ... $75.00"
               className="flex-1 bg-black/40 border border-border rounded-lg p-3 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[120px]"
             />
+
+            <div className="flex items-center gap-2 mt-3 mb-1">
+              <input
+                type="checkbox"
+                id="clearExisting"
+                checked={clearExistingYearly}
+                onChange={e => setClearExistingYearly(e.target.checked)}
+                className="accent-primary"
+              />
+              <label htmlFor="clearExisting" className="text-xs text-muted-foreground cursor-pointer">
+                Clear existing transactions for this year before importing
+              </label>
+            </div>
 
             <button
               onClick={handleProcessYearly}
@@ -564,7 +610,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                 {pieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5', fontSize: '12px' }} />
+                      <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5', fontSize: '12px' }} />
                       <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={70} stroke="none">
                         {pieData.map((e, i) => <PieCell key={i} fill={e.color} />)}
                       </Pie>
@@ -585,7 +631,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
                       <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis hide domain={['auto', 'auto']} />
-                      <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                      <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
                       <Bar dataKey="actual" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -613,8 +659,8 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="sticky top-0 bg-[#1a1b26] z-10" style={{ borderBottom: '1px solid #1e2030' }}>
-                  {['Category', 'MTD Actual', 'Budget', 'Last Updated', ''].map(h => (
-                    <th key={h} className="text-left py-2 px-2 text-xs font-medium" style={{ color: '#565f89' }}>{h}</th>
+                  {['Category', activeTab === 'monthly' ? 'MTD Actual' : `${yearlyYear} Actual`, 'Budget', activeTab === 'monthly' ? 'Last Updated' : '', ''].map((h, i) => (
+                    <th key={i} className="text-left py-2 px-2 text-xs font-medium" style={{ color: '#565f89' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -626,17 +672,52 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                   
                   const handleActualAdd = (newAmount: number) => {
                     if (newAmount === 0 || isNaN(newAmount)) return;
-                    updateData(d => ({
-                      ...d,
-                      transactions: [...d.transactions, {
-                        id: uid(),
-                        date: exp.lastUpdatedDate || todayStr,
-                        description: 'Manual Entry',
-                        amount: newAmount,
-                        categoryId: exp.id,
-                      }],
-                      expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
-                    }));
+                    if (activeTab === 'monthly') {
+                      updateData(d => ({
+                        ...d,
+                        transactions: [...d.transactions, {
+                          id: uid(),
+                          date: exp.lastUpdatedDate || todayStr,
+                          description: 'Manual Entry',
+                          amount: newAmount,
+                          categoryId: exp.id,
+                        }],
+                        expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
+                      }));
+                    } else {
+                      const isRecurring = window.confirm(`Is this ${fmt.currency(newAmount)} expense recurring monthly for ${yearlyYear}?
+
+OK = Recurring (Creates 12 monthly transactions)
+Cancel = One-Time (Creates 1 transaction for the year)`);
+                      updateData(d => {
+                        const newTxs = [];
+                        if (isRecurring) {
+                          for (let month = 1; month <= 12; month++) {
+                            const monthStr = month.toString().padStart(2, '0');
+                            newTxs.push({
+                              id: uid(),
+                              date: `${yearlyYear}-${monthStr}-28`, // arbitrary day
+                              description: 'Manual Recurring Entry',
+                              amount: newAmount,
+                              categoryId: exp.id,
+                            });
+                          }
+                        } else {
+                          newTxs.push({
+                            id: uid(),
+                            date: `${yearlyYear}-12-31`, // end of year
+                            description: 'Manual One-Time Entry',
+                            amount: newAmount,
+                            categoryId: exp.id,
+                          });
+                        }
+                        return {
+                          ...d,
+                          transactions: [...d.transactions, ...newTxs],
+                          expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, lastUpdatedDate: todayStr } : c)
+                        };
+                      });
+                    }
                   };
 
                   const handleBudgetEdit = (v: number) => {
@@ -667,6 +748,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                         <EditableValue value={exp.budget} size="sm" onChange={handleBudgetEdit} />
                       </td>
                       <td className="py-2 px-2">
+                        {activeTab === 'monthly' && (
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1">
                             <Calendar size={12} className="text-muted-foreground" />
@@ -679,6 +761,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                           </div>
                           {oldData && <span className="text-[10px] text-destructive leading-tight mt-0.5" title={`${daysSinceUpdate} days ago`}>Edited {Math.floor(daysSinceUpdate / 30)} mo ago</span>}
                         </div>
+                        )}
                       </td>
                       <td className="py-2 px-2 text-right">
                         <button onClick={() => removeCategory(exp.id)} className="p-1 rounded hover:bg-red-900/20">
@@ -721,7 +804,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
                           className="bg-transparent border-0 p-0 text-xs w-full font-medium focus:outline-none focus:text-primary" style={{ color: '#c0caf5' }} />
                       </td>
                       <td className="py-2 px-2">
-                        <EditableValue value={tx.amount} size="sm" isCurrency
+                        <EditableValue value={tx.amount} size="sm"
                           onChange={v => updateData(d => ({ ...d, transactions: d.transactions.map(t => t.id === tx.id ? { ...t, amount: v } : t) }))} />
                       </td>
                       <td className="py-2 px-2">

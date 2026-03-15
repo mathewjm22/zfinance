@@ -69,8 +69,9 @@ export function useFinancialData() {
     activeMonthsPerYear[year].add(month);
   });
 
+
   // Calculate estimated annual expenses by finding the highest extrapolated year per category
-  const estimatedAnnualExpenses = (data.expenseCategories || []).reduce((totalEst, cat) => {
+  const estimatedAnnualExpensesBreakdown = (data.expenseCategories || []).map(cat => {
     // Group transactions by year and month
     const yearlyTotals: Record<string, number> = {};
     const catTxs = (data.transactions || []).filter(t => t.categoryId === cat.id);
@@ -97,8 +98,14 @@ export function useFinancialData() {
       maxAnnualForCat = cat.budget * 12;
     }
 
-    return totalEst + maxAnnualForCat;
-  }, 0);
+    return {
+      categoryId: cat.id,
+      name: cat.name,
+      amount: maxAnnualForCat
+    };
+  });
+
+  const estimatedAnnualExpenses = estimatedAnnualExpensesBreakdown.reduce((totalEst, cat) => totalEst + cat.amount, 0);
 
   const totalContributions = (data.retirementContributions || []).reduce(
     (s, c) => s + c.monthlyAmount + (c.monthlyAmount * (c.employerMatch || 0) / 100),
@@ -129,6 +136,7 @@ export function useFinancialData() {
     totalGrossIncome,
     totalMonthlyExpenses,
     estimatedAnnualExpenses,
+    estimatedAnnualExpensesBreakdown,
     totalContributions,
     monthlyNet,
     savingsRate,
