@@ -67,11 +67,13 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
   const setYearlyText = (text: string) => setYearlyTextMap(prev => ({ ...prev, [yearlyYear]: text }));
 
   const availableYears = useMemo(() => {
-    const years = new Set<string>();
-    years.add(new Date().getFullYear().toString());
-    data.transactions.forEach(t => years.add(t.date.slice(0, 4)));
-    return Array.from(years).sort((a,b) => b.localeCompare(a));
-  }, [data.transactions]);
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i <= 20; i++) {
+      years.push((currentYear - i).toString());
+    }
+    return years;
+  }, []);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -125,7 +127,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
   const categoryActuals = useMemo(() => {
     const actuals: Record<string, number> = {};
     for (const cat of data.expenseCategories) actuals[cat.id] = 0;
-
+    
     if (activeTab === 'monthly') {
       const currentMonth = new Date().toISOString().slice(0, 7);
       for (const t of data.transactions) {
@@ -273,7 +275,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
     updateData(d => {
        const newTx: Transaction[] = [];
        const categoriesToClear = new Set<string>();
-
+       
        for (const item of reviewItems) {
           if (!item.suggestedCategoryId) continue;
           categoriesToClear.add(item.suggestedCategoryId);
@@ -288,7 +290,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
 
        let existingTxs = d.transactions;
        if (activeTab === 'yearly' && clearExistingYearly) {
-         existingTxs = existingTxs.filter(t =>
+         existingTxs = existingTxs.filter(t => 
            !(t.date.startsWith(yearlyYear) && categoriesToClear.has(t.categoryId))
          );
        }
@@ -559,16 +561,17 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <h3 className="text-sm font-bold text-primary mb-1">Import Yearly Summary</h3>
             <p className="text-xs text-muted-foreground mb-4">Paste your year-end summary text or raw transaction list here.</p>
 
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
-              {availableYears.map(y => (
-                <button
-                  key={y}
-                  onClick={() => setYearlyYear(y)}
-                  className={`px-3 py-1 text-xs rounded-full transition-colors ${yearlyYear === y ? 'bg-primary text-black font-bold' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
-                >
-                  {y}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs text-muted-foreground">Year:</span>
+              <select
+                value={yearlyYear}
+                onChange={e => setYearlyYear(e.target.value)}
+                className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer w-24"
+              >
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
 
             <textarea
@@ -649,7 +652,19 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
         <div className="glass-card p-5 flex flex-col h-[400px]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#c0caf5' }}>
-              <TrendingDown size={16} style={{ color: '#f7768e' }} /> Budget Categories
+              <TrendingDown size={16} style={{ color: '#f7768e' }} /> 
+              Budget Categories
+              {activeTab === 'yearly' && (
+                <select
+                  value={yearlyYear}
+                  onChange={e => setYearlyYear(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer ml-2"
+                >
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
             </h3>
             <button onClick={addCategory} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(247,118,142,0.12)', color: '#f7768e' }}>
               <Plus size={12} /> Add
@@ -804,7 +819,7 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                           className="bg-transparent border-0 p-0 text-xs w-full font-medium focus:outline-none focus:text-primary" style={{ color: '#c0caf5' }} />
                       </td>
                       <td className="py-2 px-2">
-                        <EditableValue value={tx.amount} size="sm"
+                        <EditableValue value={tx.amount} size="sm" 
                           onChange={v => updateData(d => ({ ...d, transactions: d.transactions.map(t => t.id === tx.id ? { ...t, amount: v } : t) }))} />
                       </td>
                       <td className="py-2 px-2">
