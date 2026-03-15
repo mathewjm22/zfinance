@@ -6,6 +6,8 @@ import { EditableValue } from '../EditableValue';
 import { fmt, uid } from '../../utils';
 import { parseChaseStatement, parseYearlySummaryText, ParsedTransaction } from '../../utils/pdfParser';
 import { PieChart, Pie, Cell as PieCell } from 'recharts';
+import { estimateCategoryInflation } from '../../utils/ai';
+import { Sparkles } from 'lucide-react';
 
 function AddExpenseInput({ total, onAdd }: { total: number, onAdd: (v: number) => void }) {
   const [editing, setEditing] = useState(false);
@@ -1270,6 +1272,146 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
           </div>
         </div>
       </div>
+
+      {/* Retirement Projections (Only in Yearly View) */}
+      {activeTab === 'yearly' && (
+        <div className="glass-card p-5 mt-6 animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#c0caf5' }}>
+                <TrendingDown size={16} style={{ color: '#e0af68' }} /> Retirement Expense Projections
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Configure which expenses will continue into retirement and estimate their future costs.
+              </p>
+            </div>
+            <button onClick={() => updateData(d => ({
+              ...d,
+              expenseCategories: [...d.expenseCategories, { id: uid(), name: 'New Retirement Expense', budget: 0, color: '#e0af68', isRetirement: true }],
+            }))} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(224,175,104,0.12)', color: '#e0af68' }}>
+              <Plus size={12} /> Add
+            </button>
+          </div>
+
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#1e2030] text-xs text-left" style={{ color: '#565f89' }}>
+                  <th className="py-2 px-2 font-medium w-1/4">Category</th>
+                  <th className="py-2 px-2 font-medium text-center">Continue in Retirement?</th>
+                  <th className="py-2 px-2 font-medium text-right">Base Annual Cost (Today's $)</th>
+                  <th className="py-2 px-2 font-medium text-right">Proj. Annual Increase %</th>
+                  <th className="py-2 px-2 font-medium text-center">AI Est.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.expenseCategories.map(exp => {
+                  const isRetiree = exp.isRetirement !== false;
+
+                  // Calculate historical average annual spend for this category
+                  let totalSpent = 0;
+                  const yearsWithData = new Set<string>();
+                  for (const t of data.transactions) {
+                    if (t.categoryId === exp.id) {
+                      totalSpent += t.amount;
+                      yearsWithData.add(t.date.slice(0, 4));
+                    }
+                  }
+                  const numYears = Math.max(1, yearsWithData.size);
+                  const historicalAverage = totalSpent / numYears;
+
+                  const currentOverride = exp.retirementAnnualOverride;
+                  const displayCost = currentOverride !== undefined ? currentOverride : historicalAverage;
+
+                  const inflationRate = exp.retirementInflationRate !== undefined ? exp.retirementInflationRate : data.personalInfo.inflationRate;
+
+                  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
+                  const handleAIEstimate = async () => {
+                    setIsLoadingAI(true);
+                    try {
+                      const est = await estimateCategoryInflation(exp.name);
+                      if (est !== null) {
+                        updateData(d => ({
+                          ...d,
+                          expenseCategories: d.expenseCategories.map(c =>
+                            c.id === exp.id ? { ...c, retirementInflationRate: est } : c
+                          )
+                        }));
+                      } else {
+                        alert(`Could not get an AI estimate for "${exp.name}". Ensure VITE_GITHUB_TOKEN is set.`);
+                      }
+                    } finally {
+                      setIsLoadingAI(false);
+                    }
+                  };
+
+                  return (
+                    <tr key={exp.id} className="border-b border-[#1e203060] hover:bg-white/5 transition-colors">
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: exp.color }} />
+                          <span style={{ color: '#c0caf5' }} className="font-medium truncate">{exp.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isRetiree}
+                          onChange={(e) => updateData(d => ({
+                            ...d,
+                            expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, isRetirement: e.target.checked } : c)
+                          }))}
+                          className="accent-primary cursor-pointer w-4 h-4 rounded border-gray-600 bg-gray-700"
+                        />
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <div className={`transition-opacity ${!isRetiree ? 'opacity-30 pointer-events-none' : ''}`}>
+                          <EditableValue
+                            value={displayCost}
+                            onChange={(v) => updateData(d => ({
+                              ...d,
+                              expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, retirementAnnualOverride: v } : c)
+                            }))}
+                          />
+                          {currentOverride === undefined && historicalAverage > 0 && (
+                            <span className="text-[10px] text-muted-foreground block mt-0.5 ml-auto">Hist. Avg</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <div className={`transition-opacity ${!isRetiree ? 'opacity-30 pointer-events-none' : ''}`}>
+                          <EditableValue
+                            value={inflationRate}
+                            suffix="%"
+                            onChange={(v) => updateData(d => ({
+                              ...d,
+                              expenseCategories: d.expenseCategories.map(c => c.id === exp.id ? { ...c, retirementInflationRate: v } : c)
+                            }))}
+                          />
+                          {exp.retirementInflationRate === undefined && (
+                            <span className="text-[10px] text-muted-foreground block mt-0.5 ml-auto">Global Default</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                         <button
+                           onClick={handleAIEstimate}
+                           disabled={isLoadingAI || !isRetiree}
+                           title="Use AI to estimate inflation rate for this category"
+                           className={`p-1.5 rounded-lg transition-all ${!isRetiree ? 'opacity-30 cursor-not-allowed' : isLoadingAI ? 'animate-pulse bg-primary/20 text-primary' : 'hover:bg-primary/20 text-[#e0af68]'}`}
+                         >
+                           <Sparkles size={14} />
+                         </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

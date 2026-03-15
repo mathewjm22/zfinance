@@ -109,8 +109,8 @@ export function FireTab({ data, updateData, totalNetWorth, totalGrossIncome, est
       <div className="glass-card p-6 mt-6">
         <h3 className="text-sm font-semibold mb-2" style={{ color: '#c0caf5' }}>Estimated Retirement Expenses</h3>
         <p className="text-xs text-muted-foreground mb-4">
-          This is an estimate of your annual expenses in retirement based on your highest historical spending per category.
-          <br/><span className="text-info font-bold">Missing expenses?</span> (e.g., bills a spouse pays). Go to the <span className="text-primary cursor-pointer underline" onClick={() => document.querySelector('button:has(svg.lucide-trending-down)')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>Expenses Tab &gt; Yearly View</span> to manually add un-tracked transactions!
+          This is an estimate of your annual expenses in retirement, adjusted for category-specific inflation vs. global inflation. It is based on historical averages or your manual overrides.
+          <br/><span className="text-info font-bold">Adjust these values?</span> Go to the <span className="text-primary cursor-pointer underline" onClick={() => document.querySelector('button:has(svg.lucide-trending-down)')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>Expenses Tab &gt; Yearly View</span> to configure your Retirement Projections!
         </p>
 
         <div className="overflow-x-auto custom-scrollbar">
