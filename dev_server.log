@@ -17,3 +17,6 @@
 6:00:57 AM [vite] (client) page reload verify.py
 6:01:08 AM [vite] (client) hmr update /src/components/tabs/FireTab.tsx, /src/index.css
 6:01:08 AM [vite] (client) hmr update /src/components/tabs/RetirementAnalysisTab.tsx, /src/index.css
+10:55:55 AM [vite] (client) hmr update /src/components/tabs/ExpensesTab.tsx, /src/index.css
+10:57:22 AM [vite] (client) page reload patch_dropdown.py
+10:57:22 AM [vite] (client) page reload verify2.py

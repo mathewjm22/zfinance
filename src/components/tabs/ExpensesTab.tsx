@@ -67,11 +67,13 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
   const setYearlyText = (text: string) => setYearlyTextMap(prev => ({ ...prev, [yearlyYear]: text }));
 
   const availableYears = useMemo(() => {
-    const years = new Set<string>();
-    years.add(new Date().getFullYear().toString());
-    data.transactions.forEach(t => years.add(t.date.slice(0, 4)));
-    return Array.from(years).sort((a,b) => b.localeCompare(a));
-  }, [data.transactions]);
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i <= 20; i++) {
+      years.push((currentYear - i).toString());
+    }
+    return years;
+  }, []);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -559,16 +561,17 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
             <h3 className="text-sm font-bold text-primary mb-1">Import Yearly Summary</h3>
             <p className="text-xs text-muted-foreground mb-4">Paste your year-end summary text or raw transaction list here.</p>
 
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar">
-              {availableYears.map(y => (
-                <button
-                  key={y}
-                  onClick={() => setYearlyYear(y)}
-                  className={`px-3 py-1 text-xs rounded-full transition-colors ${yearlyYear === y ? 'bg-primary text-black font-bold' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
-                >
-                  {y}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs text-muted-foreground">Year:</span>
+              <select
+                value={yearlyYear}
+                onChange={e => setYearlyYear(e.target.value)}
+                className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer w-24"
+              >
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
 
             <textarea
