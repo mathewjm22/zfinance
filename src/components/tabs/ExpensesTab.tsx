@@ -1306,28 +1306,47 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
               </thead>
               <tbody>
                 {data.expenseCategories.map(exp => {
-                  const isRetiree = exp.isRetirement !== false;
+                  return (
+                    <RetirementCategoryRow
+                      key={exp.id}
+                      exp={exp}
+                      data={data}
+                      updateData={updateData}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-                  // Calculate historical average annual spend for this category
-                  let totalSpent = 0;
-                  const yearsWithData = new Set<string>();
-                  for (const t of data.transactions) {
-                    if (t.categoryId === exp.id) {
-                      totalSpent += t.amount;
-                      yearsWithData.add(t.date.slice(0, 4));
-                    }
-                  }
-                  const numYears = Math.max(1, yearsWithData.size);
-                  const historicalAverage = totalSpent / numYears;
+function RetirementCategoryRow({ exp, data, updateData }: { exp: ExpenseCategory, data: FinancialData, updateData: (fn: (p: FinancialData) => FinancialData) => void }) {
+  const isRetiree = exp.isRetirement !== false;
 
-                  const currentOverride = exp.retirementAnnualOverride;
-                  const displayCost = currentOverride !== undefined ? currentOverride : historicalAverage;
+  // Calculate historical average annual spend for this category
+  let totalSpent = 0;
+  const yearsWithData = new Set<string>();
+  for (const t of data.transactions) {
+    if (t.categoryId === exp.id) {
+      totalSpent += t.amount;
+      yearsWithData.add(t.date.slice(0, 4));
+    }
+  }
+  const numYears = Math.max(1, yearsWithData.size);
+  const historicalAverage = totalSpent / numYears;
 
-                  const inflationRate = exp.retirementInflationRate !== undefined ? exp.retirementInflationRate : data.personalInfo.inflationRate;
+  const currentOverride = exp.retirementAnnualOverride;
+  const displayCost = currentOverride !== undefined ? currentOverride : historicalAverage;
 
-                  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const inflationRate = exp.retirementInflationRate !== undefined ? exp.retirementInflationRate : data.personalInfo.inflationRate;
 
-                  const handleAIEstimate = async () => {
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
+  const handleAIEstimate = async () => {
                     setIsLoadingAI(true);
                     try {
                       const est = await estimateCategoryInflation(exp.name);
@@ -1405,13 +1424,5 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                          </button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
