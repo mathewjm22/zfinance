@@ -54,29 +54,64 @@ function AddExpenseInput({ total, onAdd }: { total: number, onAdd: (v: number) =
   );
 }
 
+export interface ExpensesUiState {
+  activeSubTab: 'overview' | 'monthly' | 'quarterly' | 'yearly';
+  yearlyYear: string;
+  globalMonth: string;
+  globalQuarter: string;
+  yearlyTextMap: Record<string, string>;
+  quarterlyTextMap: Record<string, string>;
+  monthlyTextMap: Record<string, string>;
+  clearExistingYearly: boolean;
+}
+
 interface Props {
   data: FinancialData;
   updateData: (fn: (p: FinancialData) => FinancialData) => void;
   totalMonthlyExpenses: number;
+  uiState?: ExpensesUiState;
+  setUiState?: (updater: (prev: ExpensesUiState) => ExpensesUiState) => void;
 }
 
-export function ExpensesTab({ data, updateData, totalMonthlyExpenses }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'monthly' | 'quarterly' | 'yearly'>('overview');
-  const [yearlyTextMap, setYearlyTextMap] = useState<Record<string, string>>({});
-  const [yearlyYear, setYearlyYear] = useState(new Date().getFullYear().toString());
-  const [clearExistingYearly, setClearExistingYearly] = useState(false);
-  const [globalMonth, setGlobalMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
-  const [globalQuarter, setGlobalQuarter] = useState(`Q${Math.floor(new Date().getMonth() / 3) + 1}`);
+export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, setUiState }: Props) {
+  // Use provided UI state or fallback to local state if not provided
+  const [_localUiState, _setLocalUiState] = useState<ExpensesUiState>({
+    activeSubTab: 'overview',
+    yearlyYear: new Date().getFullYear().toString(),
+    globalMonth: (new Date().getMonth() + 1).toString().padStart(2, '0'),
+    globalQuarter: `Q${Math.floor(new Date().getMonth() / 3) + 1}`,
+    yearlyTextMap: {},
+    quarterlyTextMap: {},
+    monthlyTextMap: {},
+    clearExistingYearly: false,
+  });
 
-  const yearlyText = yearlyTextMap[yearlyYear] || '';
-  const setYearlyText = (text: string) => setYearlyTextMap(prev => ({ ...prev, [yearlyYear]: text }));
-  const [quarterlyTextMap, setQuarterlyTextMap] = useState<Record<string, string>>({});
-  const quarterlyText = quarterlyTextMap[`${yearlyYear}-${globalQuarter}`] || '';
-  const setQuarterlyText = (text: string) => setQuarterlyTextMap(prev => ({ ...prev, [`${yearlyYear}-${globalQuarter}`]: text }));
+  const state = uiState || _localUiState;
+  const setState = setUiState || _setLocalUiState;
 
-  const [monthlyTextMap, setMonthlyTextMap] = useState<Record<string, string>>({});
-  const monthlyText = monthlyTextMap[`${yearlyYear}-${globalMonth}`] || '';
-  const setMonthlyText = (text: string) => setMonthlyTextMap(prev => ({ ...prev, [`${yearlyYear}-${globalMonth}`]: text }));
+  const activeTab = state.activeSubTab;
+  const setActiveTab = (v: 'overview' | 'monthly' | 'quarterly' | 'yearly') => setState(p => ({ ...p, activeSubTab: v }));
+
+  const yearlyYear = state.yearlyYear;
+  const setYearlyYear = (v: string) => setState(p => ({ ...p, yearlyYear: v }));
+
+  const clearExistingYearly = state.clearExistingYearly;
+  const setClearExistingYearly = (v: boolean) => setState(p => ({ ...p, clearExistingYearly: v }));
+
+  const globalMonth = state.globalMonth;
+  const setGlobalMonth = (v: string) => setState(p => ({ ...p, globalMonth: v }));
+
+  const globalQuarter = state.globalQuarter;
+  const setGlobalQuarter = (v: string) => setState(p => ({ ...p, globalQuarter: v }));
+
+  const yearlyText = state.yearlyTextMap[yearlyYear] || '';
+  const setYearlyText = (text: string) => setState(p => ({ ...p, yearlyTextMap: { ...p.yearlyTextMap, [yearlyYear]: text } }));
+
+  const quarterlyText = state.quarterlyTextMap[`${yearlyYear}-${globalQuarter}`] || '';
+  const setQuarterlyText = (text: string) => setState(p => ({ ...p, quarterlyTextMap: { ...p.quarterlyTextMap, [`${yearlyYear}-${globalQuarter}`]: text } }));
+
+  const monthlyText = state.monthlyTextMap[`${yearlyYear}-${globalMonth}`] || '';
+  const setMonthlyText = (text: string) => setState(p => ({ ...p, monthlyTextMap: { ...p.monthlyTextMap, [`${yearlyYear}-${globalMonth}`]: text } }));
 
   const availableYears = useMemo(() => {
     const years = [];
@@ -1145,10 +1180,12 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
                         const newTxs = [];
                         if (isRecurring) {
                           for (let month = 1; month <= 12; month++) {
+                            const y = parseInt(yearlyYear);
+                            const lastDay = getLastDay(y, month);
                             const monthStr = month.toString().padStart(2, '0');
                             newTxs.push({
                               id: uid(),
-                              date: `${yearlyYear}-${monthStr}-28`, // arbitrary day
+                              date: `${yearlyYear}-${monthStr}-${lastDay.toString().padStart(2, '0')}`,
                               description: 'Manual Recurring Entry',
                               amount: newAmount,
                               categoryId: exp.id,
@@ -1327,17 +1364,31 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
 function RetirementCategoryRow({ exp, data, updateData }: { exp: ExpenseCategory, data: FinancialData, updateData: (fn: (p: FinancialData) => FinancialData) => void }) {
   const isRetiree = exp.isRetirement !== false;
                   
-  // Calculate historical average annual spend for this category
-  let totalSpent = 0;
-  const yearsWithData = new Set<string>();
+  // Calculate historical average annual spend extrapolating partial years
+  const activeMonthsPerYear: Record<string, Set<string>> = {};
+  for (const t of data.transactions) {
+    const year = t.date.slice(0, 4);
+    const month = t.date.slice(0, 7);
+    if (!activeMonthsPerYear[year]) activeMonthsPerYear[year] = new Set();
+    activeMonthsPerYear[year].add(month);
+  }
+
+  const spentPerYear: Record<string, number> = {};
   for (const t of data.transactions) {
     if (t.categoryId === exp.id) {
-      totalSpent += t.amount;
-      yearsWithData.add(t.date.slice(0, 4));
+      const year = t.date.slice(0, 4);
+      spentPerYear[year] = (spentPerYear[year] || 0) + t.amount;
     }
   }
-  const numYears = Math.max(1, yearsWithData.size);
-  const historicalAverage = totalSpent / numYears;
+
+  let totalExtrapolated = 0;
+  let yearsCount = 0;
+  for (const [year, spent] of Object.entries(spentPerYear)) {
+    const activeMonths = activeMonthsPerYear[year]?.size || 12;
+    totalExtrapolated += (spent / activeMonths) * 12;
+    yearsCount++;
+  }
+  const historicalAverage = yearsCount > 0 ? totalExtrapolated / yearsCount : 0;
 
   const currentOverride = exp.retirementAnnualOverride;
   const displayCost = currentOverride !== undefined ? currentOverride : historicalAverage;

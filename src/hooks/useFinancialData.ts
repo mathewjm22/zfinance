@@ -80,19 +80,27 @@ export function useFinancialData() {
         // Use manual override if present
         annualCost = cat.retirementAnnualOverride;
       } else {
-        // Calculate historical average
+        // Calculate historical average extrapolating partial years
         const catTxs = (data.transactions || []).filter(t => t.categoryId === cat.id);
         
-        let totalSpent = 0;
-        const yearsWithData = new Set<string>();
+        const spentPerYear: Record<string, number> = {};
         
         catTxs.forEach(t => {
-          totalSpent += t.amount;
-          yearsWithData.add(t.date.slice(0, 4));
+          const year = t.date.slice(0, 4);
+          spentPerYear[year] = (spentPerYear[year] || 0) + t.amount;
         });
 
-        const numYears = Math.max(1, yearsWithData.size);
-        annualCost = totalSpent / numYears;
+        let totalExtrapolated = 0;
+        let yearsCount = 0;
+
+        for (const [year, spent] of Object.entries(spentPerYear)) {
+          const activeMonths = activeMonthsPerYear[year]?.size || 12;
+          const extrapolatedYearly = (spent / activeMonths) * 12;
+          totalExtrapolated += extrapolatedYearly;
+          yearsCount++;
+        }
+
+        annualCost = yearsCount > 0 ? totalExtrapolated / yearsCount : 0;
 
         // If no transactions exist for this category, fall back to the monthly budget * 12
         if (annualCost === 0 && cat.budget > 0) {
