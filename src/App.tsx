@@ -45,6 +45,18 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Preserve Expenses Tab UI state
+  const [expensesUiState, setExpensesUiState] = useState({
+    activeSubTab: 'overview' as 'overview' | 'monthly' | 'quarterly' | 'yearly',
+    yearlyYear: new Date().getFullYear().toString(),
+    globalMonth: (new Date().getMonth() + 1).toString().padStart(2, '0'),
+    globalQuarter: `Q${Math.floor(new Date().getMonth() / 3) + 1}`,
+    yearlyTextMap: {} as Record<string, string>,
+    quarterlyTextMap: {} as Record<string, string>,
+    monthlyTextMap: {} as Record<string, string>,
+    clearExistingYearly: false,
+  });
+
   // Core Data State
   const finance = useFinancialData();
 
@@ -57,7 +69,7 @@ export default function App() {
       case 'overview':   return <OverviewTab {...finance} />;
       case 'accounts':   return <AccountsTab data={finance.data} updateData={finance.updateData} totalNetWorth={finance.totalNetWorth} />;
       case 'income':     return <IncomeTab data={finance.data} updateData={finance.updateData} totalMonthlyIncome={finance.totalMonthlyIncome} totalGrossIncome={finance.totalGrossIncome} />;
-      case 'expenses':   return <ExpensesTab data={finance.data} updateData={finance.updateData} totalMonthlyExpenses={finance.totalMonthlyExpenses} />;
+      case 'expenses':   return <ExpensesTab data={finance.data} updateData={finance.updateData} totalMonthlyExpenses={finance.totalMonthlyExpenses} uiState={expensesUiState} setUiState={setExpensesUiState} />;
       case 'retirement': return <RetirementTab data={finance.data} updateData={finance.updateData} totalNetWorth={finance.totalNetWorth} totalContributions={finance.totalContributions} projectedAtRetirement={finance.projectedAtRetirement} yearsToRetirement={finance.yearsToRetirement} />;
       case 'fire':       return <FireTab data={finance.data} updateData={finance.updateData} totalNetWorth={finance.totalNetWorth} totalGrossIncome={finance.totalGrossIncome} estimatedAnnualExpenses={finance.estimatedAnnualExpenses} breakdown={finance.estimatedAnnualExpensesBreakdown} />;
       case 'taxes':      return <TaxTab data={finance.data} updateData={finance.updateData} totalGrossIncome={finance.totalGrossIncome} />;
