@@ -92,6 +92,13 @@ export function useGoogleDrive(data: FinancialData, onLoad: (d: FinancialData) =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, status]);
 
+  useEffect(() => {
+    // Eagerly load scripts so that popup blockers (like in mobile Safari)
+    // don't block the synchronous login intent later.
+    ensureGapi().catch(() => {});
+    ensureGis().catch(() => {});
+  }, []);
+
   const syncNow = useCallback(async (payload: FinancialData) => {
     if (!currentToken || !fileIdRef.current) return;
     setStatus('syncing');
@@ -134,38 +141,50 @@ export function useGoogleDrive(data: FinancialData, onLoad: (d: FinancialData) =
     } catch {/* file may be empty on first use */}
   }, [onLoad]);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(() => {
     setStatus('connecting');
     setError(null);
-    try {
-      await ensureGapi();
-      await ensureGis();
 
-      await new Promise<void>((resolve, reject) => {
-        tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: CLIENT_ID,
-          scope: SCOPE,
-          callback: async (resp) => {
-            if (resp.error) { reject(new Error(resp.error)); return; }
-            currentToken = resp.access_token;
-            // Get user info
-            try {
-              const infoRes = await fetch(
-                'https://www.googleapis.com/oauth2/v3/userinfo',
-                { headers: { Authorization: `Bearer ${currentToken}` } }
-              );
-              const info = await infoRes.json() as { email: string };
-              setUserEmail(info.email);
-            } catch {}
-            window.gapi.client.setToken({ access_token: currentToken });
+    // To prevent popup blockers, `requestAccessToken` must be called synchronously
+    // in the click handler. We can only do this if the scripts are already loaded.
+    if (!gapiReady || !gisReady) {
+      setError("Google API is still loading. Please try again in a moment.");
+      setStatus('disconnected');
+      return;
+    }
+
+    try {
+      tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        callback: async (resp) => {
+          if (resp.error) {
+            setError(resp.error);
+            setStatus('error');
+            return;
+          }
+          currentToken = resp.access_token;
+          try {
+            const infoRes = await fetch(
+              'https://www.googleapis.com/oauth2/v3/userinfo',
+              { headers: { Authorization: `Bearer ${currentToken}` } }
+            );
+            const info = await infoRes.json() as { email: string };
+            setUserEmail(info.email);
+          } catch {}
+          window.gapi.client.setToken({ access_token: currentToken });
+
+          try {
             fileIdRef.current = await findOrCreateFile();
             await loadFromDrive();
             setStatus('connected');
-            resolve();
-          },
-        });
-        tokenClient!.requestAccessToken({ prompt: '' });
+          } catch (err) {
+            setError(String(err));
+            setStatus('error');
+          }
+        },
       });
+      tokenClient.requestAccessToken({ prompt: '' });
     } catch (e) {
       setError(String(e));
       setStatus('error');
