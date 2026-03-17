@@ -55,6 +55,13 @@ export default function App() {
     quarterlyTextMap: {} as Record<string, string>,
     monthlyTextMap: {} as Record<string, string>,
     clearExistingYearly: false,
+    overviewTimeframe: '6m' as '6m' | '1y' | '5y' | '10y',
+    monthlyComparisonCategory: 'ALL',
+    monthlyComparisonStyle: 'ONLY' as 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE',
+    quarterlyComparisonCategory: 'ALL',
+    quarterlyComparisonStyle: 'ONLY' as 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE',
+    yearlyComparisonCategory: 'ALL',
+    yearlyComparisonStyle: 'ONLY' as 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE',
   });
 
   // Core Data State
