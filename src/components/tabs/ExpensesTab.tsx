@@ -63,6 +63,13 @@ export interface ExpensesUiState {
   quarterlyTextMap: Record<string, string>;
   monthlyTextMap: Record<string, string>;
   clearExistingYearly: boolean;
+  overviewTimeframe: '6m' | '1y' | '5y' | '10y';
+  monthlyComparisonCategory: string; // 'ALL' or categoryId
+  monthlyComparisonStyle: 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE';
+  quarterlyComparisonCategory: string; // 'ALL' or categoryId
+  quarterlyComparisonStyle: 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE';
+  yearlyComparisonCategory: string; // 'ALL' or categoryId
+  yearlyComparisonStyle: 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE';
 }
 
 interface Props {
@@ -84,6 +91,13 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
     quarterlyTextMap: {},
     monthlyTextMap: {},
     clearExistingYearly: false,
+    overviewTimeframe: '6m',
+    monthlyComparisonCategory: 'ALL',
+    monthlyComparisonStyle: 'ONLY',
+    quarterlyComparisonCategory: 'ALL',
+    quarterlyComparisonStyle: 'ONLY',
+    yearlyComparisonCategory: 'ALL',
+    yearlyComparisonStyle: 'ONLY',
   });
 
   const state = uiState || _localUiState;
@@ -112,6 +126,27 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
 
   const monthlyText = state.monthlyTextMap[`${yearlyYear}-${globalMonth}`] || '';
   const setMonthlyText = (text: string) => setState(p => ({ ...p, monthlyTextMap: { ...p.monthlyTextMap, [`${yearlyYear}-${globalMonth}`]: text } }));
+
+  const overviewTimeframe = state.overviewTimeframe || '6m';
+  const setOverviewTimeframe = (v: '6m' | '1y' | '5y' | '10y') => setState(p => ({ ...p, overviewTimeframe: v }));
+
+  const monthlyComparisonCategory = state.monthlyComparisonCategory || 'ALL';
+  const setMonthlyComparisonCategory = (v: string) => setState(p => ({ ...p, monthlyComparisonCategory: v }));
+
+  const monthlyComparisonStyle = state.monthlyComparisonStyle || 'ONLY';
+  const setMonthlyComparisonStyle = (v: 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE') => setState(p => ({ ...p, monthlyComparisonStyle: v }));
+
+  const quarterlyComparisonCategory = state.quarterlyComparisonCategory || 'ALL';
+  const setQuarterlyComparisonCategory = (v: string) => setState(p => ({ ...p, quarterlyComparisonCategory: v }));
+
+  const quarterlyComparisonStyle = state.quarterlyComparisonStyle || 'ONLY';
+  const setQuarterlyComparisonStyle = (v: 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE') => setState(p => ({ ...p, quarterlyComparisonStyle: v }));
+
+  const yearlyComparisonCategory = state.yearlyComparisonCategory || 'ALL';
+  const setYearlyComparisonCategory = (v: string) => setState(p => ({ ...p, yearlyComparisonCategory: v }));
+
+  const yearlyComparisonStyle = state.yearlyComparisonStyle || 'ONLY';
+  const setYearlyComparisonStyle = (v: 'ONLY' | 'STACKED' | 'SIDE_BY_SIDE') => setState(p => ({ ...p, yearlyComparisonStyle: v }));
 
   const availableYears = useMemo(() => {
     const years = [];
@@ -311,6 +346,181 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
   }, [data.transactions, totalBudget]);
 
   const showHistoricalGraph = historicalData.length > 1;
+
+  // Data for Monthly Comparison Bar Chart
+  const monthlyComparisonData = useMemo(() => {
+    const monthsData: Record<string, { name: string, total: number, categoryAmt: number, restAmt: number }> = {};
+
+    for (const t of data.transactions) {
+      const monthStr = t.date.slice(0, 7); // YYYY-MM
+      if (!monthsData[monthStr]) {
+        monthsData[monthStr] = {
+          name: monthStr,
+          total: 0,
+          categoryAmt: 0,
+          restAmt: 0
+        };
+      }
+      monthsData[monthStr].total += t.amount;
+      if (monthlyComparisonCategory !== 'ALL' && t.categoryId === monthlyComparisonCategory) {
+        monthsData[monthStr].categoryAmt += t.amount;
+      } else {
+        monthsData[monthStr].restAmt += t.amount;
+      }
+    }
+
+    const sortedMonths = Object.keys(monthsData).sort();
+    return sortedMonths.map(m => {
+      const [y, mm] = m.split('-');
+      const date = new Date(parseInt(y), parseInt(mm) - 1, 1);
+      return {
+        ...monthsData[m],
+        displayName: date.toLocaleString('default', { month: 'short', year: '2-digit' })
+      };
+    });
+  }, [data.transactions, monthlyComparisonCategory]);
+
+  const selectedCategoryColor = useMemo(() => {
+    if (monthlyComparisonCategory === 'ALL') return '#7aa2f7';
+    const cat = data.expenseCategories.find(c => c.id === monthlyComparisonCategory);
+    return cat ? cat.color : '#7aa2f7';
+  }, [monthlyComparisonCategory, data.expenseCategories]);
+
+  // Data for Quarterly Comparison Bar Chart
+  const quarterlyComparisonData = useMemo(() => {
+    const quartersData: Record<string, { name: string, total: number, categoryAmt: number, restAmt: number }> = {};
+
+    for (const t of data.transactions) {
+      const year = t.date.slice(0, 4);
+      const month = parseInt(t.date.slice(5, 7));
+      const qNum = Math.floor((month - 1) / 3) + 1;
+      const quarterStr = `${year}-Q${qNum}`;
+
+      if (!quartersData[quarterStr]) {
+        quartersData[quarterStr] = {
+          name: quarterStr,
+          total: 0,
+          categoryAmt: 0,
+          restAmt: 0
+        };
+      }
+      quartersData[quarterStr].total += t.amount;
+      if (quarterlyComparisonCategory !== 'ALL' && t.categoryId === quarterlyComparisonCategory) {
+        quartersData[quarterStr].categoryAmt += t.amount;
+      } else {
+        quartersData[quarterStr].restAmt += t.amount;
+      }
+    }
+
+    const sortedQuarters = Object.keys(quartersData).sort();
+    return sortedQuarters.map(q => {
+      const [y, qStr] = q.split('-');
+      return {
+        ...quartersData[q],
+        displayName: `${qStr} ${y}`
+      };
+    });
+  }, [data.transactions, quarterlyComparisonCategory]);
+
+  const selectedQuarterlyCategoryColor = useMemo(() => {
+    if (quarterlyComparisonCategory === 'ALL') return '#7aa2f7';
+    const cat = data.expenseCategories.find(c => c.id === quarterlyComparisonCategory);
+    return cat ? cat.color : '#7aa2f7';
+  }, [quarterlyComparisonCategory, data.expenseCategories]);
+
+  // Data for Yearly Comparison Bar Chart
+  const yearlyComparisonData = useMemo(() => {
+    const yearsData: Record<string, { name: string, total: number, categoryAmt: number, restAmt: number }> = {};
+
+    for (const t of data.transactions) {
+      const yearStr = t.date.slice(0, 4); // YYYY
+
+      if (!yearsData[yearStr]) {
+        yearsData[yearStr] = {
+          name: yearStr,
+          total: 0,
+          categoryAmt: 0,
+          restAmt: 0
+        };
+      }
+      yearsData[yearStr].total += t.amount;
+      if (yearlyComparisonCategory !== 'ALL' && t.categoryId === yearlyComparisonCategory) {
+        yearsData[yearStr].categoryAmt += t.amount;
+      } else {
+        yearsData[yearStr].restAmt += t.amount;
+      }
+    }
+
+    const sortedYears = Object.keys(yearsData).sort();
+    return sortedYears.map(y => {
+      return {
+        ...yearsData[y],
+        displayName: y
+      };
+    });
+  }, [data.transactions, yearlyComparisonCategory]);
+
+  const selectedYearlyCategoryColor = useMemo(() => {
+    if (yearlyComparisonCategory === 'ALL') return '#7aa2f7';
+    const cat = data.expenseCategories.find(c => c.id === yearlyComparisonCategory);
+    return cat ? cat.color : '#7aa2f7';
+  }, [yearlyComparisonCategory, data.expenseCategories]);
+
+  // Data for Overview Comparison Bar Chart
+  const overviewComparisonData = useMemo(() => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-11
+
+    if (overviewTimeframe === '6m' || overviewTimeframe === '1y') {
+      const monthsCount = overviewTimeframe === '6m' ? 6 : 12;
+      const monthsData: Record<string, number> = {};
+
+      // Initialize months to ensure they show up even if empty
+      for (let i = monthsCount - 1; i >= 0; i--) {
+        const d = new Date(currentYear, currentMonth - i, 1);
+        const yStr = d.getFullYear().toString();
+        const mStr = (d.getMonth() + 1).toString().padStart(2, '0');
+        monthsData[`${yStr}-${mStr}`] = 0;
+      }
+
+      for (const t of data.transactions) {
+        const tMonth = t.date.slice(0, 7);
+        if (monthsData[tMonth] !== undefined) {
+          monthsData[tMonth] += t.amount;
+        }
+      }
+
+      return Object.keys(monthsData).sort().map(m => {
+        const [y, mm] = m.split('-');
+        const date = new Date(parseInt(y), parseInt(mm) - 1, 1);
+        return {
+          name: date.toLocaleString('default', { month: 'short', year: '2-digit' }),
+          actual: monthsData[m],
+        };
+      });
+    } else {
+      // 5y or 10y
+      const yearsCount = overviewTimeframe === '5y' ? 5 : 10;
+      const yearsData: Record<string, number> = {};
+
+      for (let i = yearsCount - 1; i >= 0; i--) {
+        yearsData[(currentYear - i).toString()] = 0;
+      }
+
+      for (const t of data.transactions) {
+        const tYear = t.date.slice(0, 4);
+        if (yearsData[tYear] !== undefined) {
+          yearsData[tYear] += t.amount;
+        }
+      }
+
+      return Object.keys(yearsData).sort().map(y => ({
+        name: y,
+        actual: yearsData[y],
+      }));
+    }
+  }, [data.transactions, overviewTimeframe]);
 
   const handleFile = async (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -801,6 +1011,32 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
             </div>
           )}
 
+          {/* Overview Comparison Bar Chart */}
+          <div className="glass-card p-5 md:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>Historical Spending Comparison</h3>
+              <select
+                value={overviewTimeframe}
+                onChange={e => setOverviewTimeframe(e.target.value as any)}
+                className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+              >
+                <option value="6m">Past 6 Months</option>
+                <option value="1y">Past 1 Year</option>
+                <option value="5y">Past 5 Years</option>
+                <option value="10y">Past 10 Years</option>
+              </select>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={overviewComparisonData} barSize={24}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
+                <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide domain={['auto', 'auto']} />
+                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Bar dataKey="actual" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
           {/* Pie Chart & Historical Comparison */}
           <div className="glass-card p-5 md:col-span-2 grid grid-cols-2 gap-4">
             <div>
@@ -823,17 +1059,59 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
               </div>
             </div>
 
+
             <div>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: '#c0caf5' }}>Year-over-Year Spending</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>Year-over-Year Spending</h3>
+                <div className="flex gap-2">
+                  <select
+                    value={yearlyComparisonCategory}
+                    onChange={e => setYearlyComparisonCategory(e.target.value)}
+                    className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="ALL">All Categories</option>
+                    {data.expenseCategories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {yearlyComparisonCategory !== 'ALL' && (
+                    <select
+                      value={yearlyComparisonStyle}
+                      onChange={e => setYearlyComparisonStyle(e.target.value as any)}
+                      className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer"
+                    >
+                      <option value="ONLY">Category Only</option>
+                      <option value="STACKED">Stacked</option>
+                      <option value="SIDE_BY_SIDE">Side-by-Side</option>
+                    </select>
+                  )}
+                </div>
+              </div>
               <div className="h-[200px]">
-                {yearlyHistoricalData.length > 0 ? (
+                {yearlyComparisonData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={yearlyHistoricalData} barSize={20}>
+                    <BarChart data={yearlyComparisonData} barSize={20} barGap={yearlyComparisonStyle === 'SIDE_BY_SIDE' ? 2 : 0}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
                       <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis hide domain={['auto', 'auto']} />
                       <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                      <Bar dataKey="actual" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                      <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
+
+                      {yearlyComparisonCategory === 'ALL' ? (
+                        <Bar dataKey="total" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                      ) : yearlyComparisonStyle === 'ONLY' ? (
+                        <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===yearlyComparisonCategory)?.name || 'Category'} fill={selectedYearlyCategoryColor} radius={[4, 4, 0, 0]} />
+                      ) : yearlyComparisonStyle === 'STACKED' ? (
+                        <>
+                          <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===yearlyComparisonCategory)?.name || 'Category'} fill={selectedYearlyCategoryColor} stackId="a" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="restAmt" name="Other Categories" fill="#3b4261" stackId="a" radius={[4, 4, 0, 0]} />
+                        </>
+                      ) : (
+                        <>
+                          <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===yearlyComparisonCategory)?.name || 'Category'} fill={selectedYearlyCategoryColor} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="restAmt" name="Other Categories" fill="#3b4261" radius={[4, 4, 0, 0]} />
+                        </>
+                      )}
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -847,6 +1125,60 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
 
 {activeTab === 'monthly' && (
         <div className={`grid gap-6 ${showHistoricalGraph ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+
+          <div className="md:col-span-full card p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground">Month-over-Month Spending</h3>
+              <div className="flex items-center gap-2">
+                <select
+                  value={monthlyComparisonCategory}
+                  onChange={e => setMonthlyComparisonCategory(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  {data.expenseCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+
+                {monthlyComparisonCategory !== 'ALL' && (
+                  <select
+                    value={monthlyComparisonStyle}
+                    onChange={e => setMonthlyComparisonStyle(e.target.value as any)}
+                    className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="ONLY">Category Only</option>
+                    <option value="STACKED">Stacked with Total</option>
+                    <option value="SIDE_BY_SIDE">Side-by-Side vs Total</option>
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={monthlyComparisonData} barSize={24} barGap={monthlyComparisonStyle === 'SIDE_BY_SIDE' ? 2 : 0}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e2030" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#565f89', fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#565f89', fontSize: 12 }} tickFormatter={(v) => `$${v}`} width={60} />
+                <Tooltip
+                  cursor={{ fill: '#1e2030', opacity: 0.4 }}
+                  contentStyle={{ backgroundColor: '#1a1b26', borderColor: '#1e2030', color: '#c0caf5', borderRadius: '8px' }}
+                  itemStyle={{ color: '#c0caf5' }}
+                  formatter={(val: number, name: string) => [fmt.currency(val), name === 'total' ? 'Total Spend' : data.expenseCategories.find(c => c.id === name)?.name || name]}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', color: '#565f89' }} />
+                {monthlyComparisonCategory === 'ALL' ? (
+                  <Bar dataKey="total" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                ) : (
+                  <>
+                    <Bar dataKey={monthlyComparisonCategory} name={data.expenseCategories.find(c => c.id === monthlyComparisonCategory)?.name || 'Category'} fill="#bb9af7" radius={[4, 4, 0, 0]} />
+                    {monthlyComparisonStyle !== 'ONLY' && (
+                      <Bar dataKey="other" name="Other Categories" fill="#3b4261" radius={[4, 4, 0, 0]} stackId={monthlyComparisonStyle === 'STACKED' ? "a" : undefined} />
+                    )}
+                  </>
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
           {/* PDF Dropzone */}
           <div
             className={`glass-card p-6 flex flex-col items-center justify-center text-center transition-all duration-200 border-2 border-dashed ${isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border'}`}
@@ -911,9 +1243,119 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
             </ResponsiveContainer>
           </div>
 
+          {/* Quarterly Comparison Bar Chart */}
+          <div className="glass-card p-5 md:col-span-3">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>Quarterly Comparison</h3>
+              <div className="flex items-center gap-2">
+                <select
+                  value={quarterlyComparisonCategory}
+                  onChange={e => setQuarterlyComparisonCategory(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  {data.expenseCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+
+                {quarterlyComparisonCategory !== 'ALL' && (
+                  <select
+                    value={quarterlyComparisonStyle}
+                    onChange={e => setQuarterlyComparisonStyle(e.target.value as any)}
+                    className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="ONLY">Category Only</option>
+                    <option value="STACKED">Stacked with Total</option>
+                    <option value="SIDE_BY_SIDE">Side-by-Side vs Total</option>
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={quarterlyComparisonData} barSize={24} barGap={quarterlyComparisonStyle === 'SIDE_BY_SIDE' ? 2 : 0}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
+                <XAxis dataKey="displayName" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide domain={['auto', 'auto']} />
+                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
+
+                {quarterlyComparisonCategory === 'ALL' ? (
+                  <Bar dataKey="total" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                ) : quarterlyComparisonStyle === 'ONLY' ? (
+                  <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===quarterlyComparisonCategory)?.name || 'Category'} fill={selectedQuarterlyCategoryColor} radius={[4, 4, 0, 0]} />
+                ) : quarterlyComparisonStyle === 'STACKED' ? (
+                  <>
+                    <Bar dataKey="restAmt" name="Other Spend" fill="#7aa2f740" stackId="a" />
+                    <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===quarterlyComparisonCategory)?.name || 'Category'} fill={selectedQuarterlyCategoryColor} stackId="a" radius={[4, 4, 0, 0]} />
+                  </>
+                ) : (
+                  <>
+                    <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===quarterlyComparisonCategory)?.name || 'Category'} fill={selectedQuarterlyCategoryColor} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="total" name="Total Spend" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
+                  </>
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Monthly Comparison Bar Chart */}
+          <div className="glass-card p-5 md:col-span-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>Monthly Comparison</h3>
+              <div className="flex items-center gap-2">
+                <select
+                  value={monthlyComparisonCategory}
+                  onChange={e => setMonthlyComparisonCategory(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  {data.expenseCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+
+                {monthlyComparisonCategory !== 'ALL' && (
+                  <select
+                    value={monthlyComparisonStyle}
+                    onChange={e => setMonthlyComparisonStyle(e.target.value as any)}
+                    className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="ONLY">Category Only</option>
+                    <option value="STACKED">Stacked with Total</option>
+                    <option value="SIDE_BY_SIDE">Side-by-Side vs Total</option>
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={monthlyComparisonData} barSize={24} barGap={monthlyComparisonStyle === 'SIDE_BY_SIDE' ? 2 : 0}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
+                <XAxis dataKey="displayName" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide domain={['auto', 'auto']} />
+                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
+
+                {monthlyComparisonCategory === 'ALL' ? (
+                  <Bar dataKey="total" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                ) : monthlyComparisonStyle === 'ONLY' ? (
+                  <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===monthlyComparisonCategory)?.name || 'Category'} fill={selectedCategoryColor} radius={[4, 4, 0, 0]} />
+                ) : monthlyComparisonStyle === 'STACKED' ? (
+                  <>
+                    <Bar dataKey="restAmt" name="Other Spend" fill="#7aa2f740" stackId="a" />
+                    <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===monthlyComparisonCategory)?.name || 'Category'} fill={selectedCategoryColor} stackId="a" radius={[4, 4, 0, 0]} />
+                  </>
+                ) : (
+                  <>
+                    <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===monthlyComparisonCategory)?.name || 'Category'} fill={selectedCategoryColor} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="total" name="Total Spend" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
+                  </>
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
           {/* Historical Graph */}
           {showHistoricalGraph && (
-            <div className="glass-card p-5 md:col-span-1">
+            <div className="glass-card p-5 md:col-span-4">
               <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Spending Over Time</h3>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={historicalData}>
@@ -931,42 +1373,100 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
         </div>
       )}
 
+
       {activeTab === 'quarterly' && (
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Quarterly Import Box */}
-          <div className="glass-card p-6 flex flex-col md:col-span-1">
-            <h3 className="text-sm font-bold text-primary mb-1">Import Quarterly Summary</h3>
-            <p className="text-xs text-muted-foreground mb-4">Paste your quarterly summary text here.</p>
+        <div className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Quarterly Import Box */}
+            <div className="glass-card p-6 flex flex-col md:col-span-1">
+              <h3 className="text-sm font-bold text-primary mb-1">Import Quarterly Summary</h3>
+              <p className="text-xs text-muted-foreground mb-4">Paste your quarterly summary text here.</p>
 
-            <textarea
-              value={quarterlyText}
-              onChange={e => setQuarterlyText(e.target.value)}
-              placeholder="e.g.\nHome Show details $31,932.20"
-              className="flex-1 bg-black/40 border border-border rounded-lg p-3 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[120px]"
-            />
+              <textarea
+                value={quarterlyText}
+                onChange={e => setQuarterlyText(e.target.value)}
+                placeholder="e.g.\nHome Show details $31,932.20"
+                className="flex-1 bg-black/40 border border-border rounded-lg p-3 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[120px]"
+              />
 
-            <button
-              onClick={handleProcessQuarterly}
-              disabled={!quarterlyText.trim()}
-              className="mt-4 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-bold w-full disabled:opacity-50"
-            >
-              Process Summary
-            </button>
+              <button
+                onClick={handleProcessQuarterly}
+                disabled={!quarterlyText.trim()}
+                className="mt-4 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-bold w-full disabled:opacity-50"
+              >
+                Process Summary
+              </button>
+            </div>
+
+            <div className="glass-card p-5 md:col-span-2">
+              <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Current Period vs Budget</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={chartData} barSize={20} barGap={2}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
+                  <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis hide />
+                  <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                  <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
+                  <Bar dataKey="budget" name="Budget (Quarterly)" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
+                    {chartData.map((e, i) => <Cell key={i} fill={e.actual > e.budget ? '#f7768e' : e.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="glass-card p-5 md:col-span-2">
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#c0caf5' }}>Current Period vs Budget</h3>
+          {/* Quarterly Comparison Bar Chart */}
+          <div className="glass-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>Quarterly Comparison</h3>
+              <div className="flex gap-2">
+                <select
+                  value={quarterlyComparisonCategory}
+                  onChange={e => setQuarterlyComparisonCategory(e.target.value)}
+                  className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  {data.expenseCategories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {quarterlyComparisonCategory !== 'ALL' && (
+                  <select
+                    value={quarterlyComparisonStyle}
+                    onChange={e => setQuarterlyComparisonStyle(e.target.value as any)}
+                    className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1.5 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="ONLY">Category Only</option>
+                    <option value="STACKED">Stacked</option>
+                    <option value="SIDE_BY_SIDE">Side-by-Side</option>
+                  </select>
+                )}
+              </div>
+            </div>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData} barSize={20} barGap={2}>
+              <BarChart data={quarterlyComparisonData} barSize={24} barGap={quarterlyComparisonStyle === 'SIDE_BY_SIDE' ? 2 : 0}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
-                <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="displayName" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
                 <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
-                <Bar dataKey="budget" name="Budget (Quarterly)" fill="#7aa2f740" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
-                  {chartData.map((e, i) => <Cell key={i} fill={e.actual > e.budget ? '#f7768e' : e.color} />)}
-                </Bar>
+
+                {quarterlyComparisonCategory === 'ALL' ? (
+                  <Bar dataKey="total" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                ) : quarterlyComparisonStyle === 'ONLY' ? (
+                  <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===quarterlyComparisonCategory)?.name || 'Category'} fill={selectedQuarterlyCategoryColor} radius={[4, 4, 0, 0]} />
+                ) : quarterlyComparisonStyle === 'STACKED' ? (
+                  <>
+                    <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===quarterlyComparisonCategory)?.name || 'Category'} fill={selectedQuarterlyCategoryColor} stackId="a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="restAmt" name="Other Categories" fill="#3b4261" stackId="a" radius={[4, 4, 0, 0]} />
+                  </>
+                ) : (
+                  <>
+                    <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===quarterlyComparisonCategory)?.name || 'Category'} fill={selectedQuarterlyCategoryColor} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="restAmt" name="Other Categories" fill="#3b4261" radius={[4, 4, 0, 0]} />
+                  </>
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1032,16 +1532,57 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: '#c0caf5' }}>Year-over-Year Spending</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold" style={{ color: '#c0caf5' }}>Year-over-Year Spending</h3>
+                <div className="flex gap-2">
+                  <select
+                    value={yearlyComparisonCategory}
+                    onChange={e => setYearlyComparisonCategory(e.target.value)}
+                    className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="ALL">All Categories</option>
+                    {data.expenseCategories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {yearlyComparisonCategory !== 'ALL' && (
+                    <select
+                      value={yearlyComparisonStyle}
+                      onChange={e => setYearlyComparisonStyle(e.target.value as any)}
+                      className="bg-black/40 border border-border text-foreground text-xs rounded-md p-1 focus:outline-none focus:border-primary cursor-pointer"
+                    >
+                      <option value="ONLY">Category Only</option>
+                      <option value="STACKED">Stacked</option>
+                      <option value="SIDE_BY_SIDE">Side-by-Side</option>
+                    </select>
+                  )}
+                </div>
+              </div>
               <div className="h-[200px]">
-                {yearlyHistoricalData.length > 0 ? (
+                {yearlyComparisonData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={yearlyHistoricalData} barSize={20}>
+                    <BarChart data={yearlyComparisonData} barSize={20} barGap={yearlyComparisonStyle === 'SIDE_BY_SIDE' ? 2 : 0}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
                       <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis hide domain={['auto', 'auto']} />
                       <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
-                      <Bar dataKey="actual" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                      <Legend verticalAlign="top" height={30} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#565f89' }} />
+
+                      {yearlyComparisonCategory === 'ALL' ? (
+                        <Bar dataKey="total" name="Total Spend" fill="#7aa2f7" radius={[4, 4, 0, 0]} />
+                      ) : yearlyComparisonStyle === 'ONLY' ? (
+                        <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===yearlyComparisonCategory)?.name || 'Category'} fill={selectedYearlyCategoryColor} radius={[4, 4, 0, 0]} />
+                      ) : yearlyComparisonStyle === 'STACKED' ? (
+                        <>
+                          <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===yearlyComparisonCategory)?.name || 'Category'} fill={selectedYearlyCategoryColor} stackId="a" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="restAmt" name="Other Categories" fill="#3b4261" stackId="a" radius={[4, 4, 0, 0]} />
+                        </>
+                      ) : (
+                        <>
+                          <Bar dataKey="categoryAmt" name={data.expenseCategories.find(c=>c.id===yearlyComparisonCategory)?.name || 'Category'} fill={selectedYearlyCategoryColor} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="restAmt" name="Other Categories" fill="#3b4261" radius={[4, 4, 0, 0]} />
+                        </>
+                      )}
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1361,7 +1902,7 @@ Cancel = One-Time (Creates 1 transaction for the year)`);
   );
 }
 
-function RetirementCategoryRow({ exp, data, updateData }: { exp: ExpenseCategory, data: FinancialData, updateData: (fn: (p: FinancialData) => FinancialData) => void }) {
+function RetirementCategoryRow({ exp, data, updateData }: { exp: any, data: FinancialData, updateData: (fn: (p: FinancialData) => FinancialData) => void }) {
   const isRetiree = exp.isRetirement !== false;
                   
   // Calculate historical average annual spend extrapolating partial years
