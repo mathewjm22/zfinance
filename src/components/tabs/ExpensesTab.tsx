@@ -243,7 +243,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
     const currentQ = `Q${Math.floor(now.getMonth() / 3) + 1}`;
     for (const t of data.transactions) {
       if (t.date.startsWith(currentYear)) {
-        const month = parseInt(t.date.slice(5, 7));
+        const month = parseInt(t.date.slice(5, 7), 10);
         const q = `Q${Math.floor((month - 1) / 3) + 1}`;
         if (q === currentQ && actuals[t.categoryId] !== undefined) {
           actuals[t.categoryId] += t.amount;
@@ -298,7 +298,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
     } else if (activeTab === 'quarterly') {
       for (const t of data.transactions) {
         if (t.date.startsWith(yearlyYear)) {
-          const month = parseInt(t.date.slice(5, 7));
+          const month = parseInt(t.date.slice(5, 7), 10);
           const q = `Q${Math.floor((month - 1) / 3) + 1}`;
           if (q === globalQuarter && actuals[t.categoryId] !== undefined) {
             actuals[t.categoryId] += t.amount;
@@ -387,12 +387,13 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
   }, [monthlyComparisonCategory, data.expenseCategories]);
 
   // Data for Quarterly Comparison Bar Chart
+  // Data for Quarterly Comparison Bar Chart
   const quarterlyComparisonData = useMemo(() => {
     const quartersData: Record<string, { name: string, total: number, categoryAmt: number, restAmt: number }> = {};
 
     for (const t of data.transactions) {
       const year = t.date.slice(0, 4);
-      const month = parseInt(t.date.slice(5, 7));
+      const month = parseInt(t.date.slice(5, 7), 10);
       const qNum = Math.floor((month - 1) / 3) + 1;
       const quarterStr = `${year}-Q${qNum}`;
 
@@ -672,6 +673,19 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
          existingTxs = existingTxs.filter(t => 
            !(t.date.startsWith(yearlyYear) && categoriesToClear.has(t.categoryId))
          );
+       } else if (activeTab === 'quarterly' && clearExistingYearly) {
+         const qNum = parseInt(globalQuarter.charAt(1));
+         const qMonths = [
+           (qNum - 1) * 3 + 1,
+           (qNum - 1) * 3 + 2,
+           (qNum - 1) * 3 + 3,
+         ].map(m => `${yearlyYear}-${m.toString().padStart(2, '0')}`);
+
+         existingTxs = existingTxs.filter(t => {
+           const tMonth = t.date.slice(0, 7);
+           const isSameQuarterAndYear = qMonths.includes(tMonth);
+           return !(isSameQuarterAndYear && categoriesToClear.has(t.categoryId));
+         });
        }
 
        return { ...d, transactions: [...existingTxs, ...newTx] };
@@ -1389,6 +1403,19 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
                 className="flex-1 bg-black/40 border border-border rounded-lg p-3 text-xs resize-none focus:outline-none focus:border-primary font-mono custom-scrollbar min-h-[120px]"
               />
 
+              <div className="flex items-center gap-2 mt-3 mb-1">
+                <input
+                  type="checkbox"
+                  id="clearExistingQuarterly"
+                  checked={clearExistingYearly}
+                  onChange={e => setClearExistingYearly(e.target.checked)}
+                  className="accent-primary"
+                />
+                <label htmlFor="clearExistingQuarterly" className="text-xs text-muted-foreground cursor-pointer">
+                  Clear existing transactions for {globalQuarter} {yearlyYear} before importing matching categories
+                </label>
+              </div>
+
               <button
                 onClick={handleProcessQuarterly}
                 disabled={!quarterlyText.trim()}
@@ -1636,9 +1663,37 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
                 </select>
               )}
             </h3>
-            <button onClick={addCategory} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(247,118,142,0.12)', color: '#f7768e' }}>
-              <Plus size={12} /> Add
-            </button>
+            <div className="flex items-center gap-2">
+              {activeTab === 'quarterly' && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete ALL transactions for ${globalQuarter} ${yearlyYear}?`)) {
+                      updateData(d => {
+                        const qNum = parseInt(globalQuarter.charAt(1));
+                        const qMonths = [
+                          (qNum - 1) * 3 + 1,
+                          (qNum - 1) * 3 + 2,
+                          (qNum - 1) * 3 + 3,
+                        ].map(m => `${yearlyYear}-${m.toString().padStart(2, '0')}`);
+
+                        return {
+                          ...d,
+                          transactions: d.transactions.filter(t => {
+                            const tMonth = t.date.slice(0, 7);
+                            return !qMonths.includes(tMonth);
+                          })
+                        };
+                      });
+                    }
+                  }}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(247,118,142,0.12)', color: '#f7768e' }}>
+                  <Trash2 size={12} /> Clear {globalQuarter}
+                </button>
+              )}
+              <button onClick={addCategory} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(122,162,247,0.12)', color: '#7aa2f7' }}>
+                <Plus size={12} /> Add
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar -mr-2 pr-2">
             <table className="w-full text-sm">

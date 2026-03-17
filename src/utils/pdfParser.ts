@@ -139,6 +139,7 @@ export function parseYearlySummaryText(text: string, defaultDate: string, catego
       const categoryName = line.replace('Show details', '').trim();
       if (i + 1 < lines.length) {
         const nextLine = lines[i+1];
+        // Match amounts that might have commas, optionally followed by a tab or space and a percentage
         const match = nextLine.match(/\$([\d,]+\.\d{2})/);
         if (match) {
           const amount = parseFloat(match[1].replace(/,/g, ''));
