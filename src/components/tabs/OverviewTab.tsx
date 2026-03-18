@@ -93,7 +93,7 @@ export function OverviewTab({
                 <Pie dataKey="balance" data={data.accounts} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={2}>
                   {data.accounts.map((a, i) => <Cell key={i} fill={a.color} />)}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex-1 space-y-2 overflow-y-auto" style={{ maxHeight: 180 }}>
@@ -206,7 +206,7 @@ export function OverviewTab({
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1e2030" />
             <XAxis dataKey="name" tick={{ fill: '#565f89', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis hide />
-            <Tooltip formatter={(v: number) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+            <Tooltip formatter={(v: any) => fmt.currency(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
             <Bar dataKey="value" radius={[6, 6, 0, 0]}>
               {cashFlowData.map((d, i) => <Cell key={i} fill={d.fill} />)}
             </Bar>

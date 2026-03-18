@@ -56,7 +56,7 @@ export function PortfolioTab({ data, updateData }: Props) {
                 <Pie dataKey="value" data={pieData} cx="50%" cy="50%" innerRadius={28} outerRadius={55} paddingAngle={2}>
                   {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmt.compact(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
+                <Tooltip formatter={(v: any) => fmt.compact(v)} contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex-1 space-y-1">

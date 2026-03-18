@@ -3,7 +3,7 @@ import { FinancialData } from '../types';
 
 const DRIVE_FILE_NAME = 'zfinance-data.json';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+const CLIENT_ID = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string;
 
 export type DriveStatus = 'disconnected' | 'connecting' | 'connected' | 'syncing' | 'error';
 
@@ -51,7 +51,7 @@ async function ensureGis(): Promise<void> {
 
 // Find or create the JSON file in appdata folder
 async function findOrCreateFile(): Promise<string> {
-  const listRes = await window.gapi.client.drive.files.list({
+  const listRes = await (window.gapi.client as any).drive.files.list({
     spaces: 'appDataFolder',
     fields: 'files(id, name)',
     q: `name = '${DRIVE_FILE_NAME}'`,
