@@ -47,12 +47,12 @@ export function RetirementAnalysisTab({ data, totalNetWorth, totalContributions,
               <XAxis dataKey="age" tick={{ fill: '#565f89', fontSize: 11 }} />
               <YAxis tickFormatter={v => fmt.compact(v)} tick={{ fill: '#565f89', fontSize: 11 }} width={50} />
               <Tooltip 
-                formatter={(v: number) => fmt.currency(v)} 
+                formatter={(v: any) => fmt.currency(v)}
                 labelFormatter={(v) => `Age ${v}`}
                 contentStyle={{ background: '#1a1b26', border: '1px solid #2a2a3d', borderRadius: 8, color: '#c0caf5' }} 
               />
               <Line type="monotone" dataKey="balance" name="Projected Portfolio" stroke="#7aa2f7" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-              <Line type="dashed" dataKey="target" name="Retirement Goal" stroke="#f7768e" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+              <Line type="monotone" dataKey="target" name="Retirement Goal" stroke="#f7768e" strokeWidth={2} strokeDasharray="5 5" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>

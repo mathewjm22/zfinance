@@ -1176,7 +1176,7 @@ export function ExpensesTab({ data, updateData, totalMonthlyExpenses, uiState, s
                   cursor={{ fill: '#1e2030', opacity: 0.4 }}
                   contentStyle={{ backgroundColor: '#1a1b26', borderColor: '#1e2030', color: '#c0caf5', borderRadius: '8px' }}
                   itemStyle={{ color: '#c0caf5' }}
-                  formatter={(val: number, name: string) => [fmt.currency(val), name === 'total' ? 'Total Spend' : data.expenseCategories.find(c => c.id === name)?.name || name]}
+                  formatter={(val: any, name: any) => [fmt.currency(val), name === 'total' ? 'Total Spend' : data.expenseCategories.find(c => c.id === name)?.name || name]}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', color: '#565f89' }} />
                 {monthlyComparisonCategory === 'ALL' ? (

@@ -10,6 +10,58 @@ function load(): FinancialData {
     if (raw) {
       const parsed = JSON.parse(raw) as FinancialData;
       // Migrate if needed
+
+      // Migration for version 1 (Default Expense Categories Update)
+      // If the loaded data has the old legacy categories or is missing the new ones, we need to update it.
+      // We do NOT want to overwrite categories that the user has added themselves, so we will replace
+      // ONLY the exact legacy default categories with the new default categories.
+
+      // Known legacy category names: 'Housing', 'Transportation', 'Food', 'Healthcare', 'Education', 'Entertainment', 'Utilities', 'Insurance', 'Personal', 'Travel', 'Giving'
+      const legacyNames = ['Housing', 'Transportation', 'Food', 'Healthcare', 'Education', 'Entertainment', 'Utilities', 'Insurance', 'Personal', 'Travel', 'Giving'];
+
+      // To ensure we only migrate if they have the legacy defaults (or a subset of them untouched),
+      // we can simply check if they have the old categories and map them to the new ones, or just replace the default list entirely if they haven't made custom ones.
+      // Since it's safer to just inject the new ones if this is an older version:
+
+      // Based on user feedback: "Existing users/data - Should this change only apply to new users (updating the default initialization data), or do we need to write a migration script..."
+      // User said: "Migration script"
+      // User said: "I also told you to add other. This was a stupid question"
+      // User said: "Existing palate"
+
+      let migratedCategories = parsed.expenseCategories || [];
+
+      // Check if we need to migrate (e.g. they have 'Housing' which was the old default)
+      if (migratedCategories.some(c => c.name === 'Housing') && !migratedCategories.some(c => c.name === 'Home')) {
+
+        // To avoid breaking existing transactions, we will map legacy defaults to their new equivalents.
+        migratedCategories = migratedCategories.map(c => {
+          if (c.name === 'Housing') return { ...c, name: 'Home', budget: 2189 };
+          if (c.name === 'Transportation') return { ...c, name: 'Automotive', budget: 1113 };
+          if (c.name === 'Food') return { ...c, name: 'Food & drink', budget: 847 };
+          if (c.name === 'Healthcare') return { ...c, name: 'Health & wellness', budget: 517 };
+          if (c.name === 'Utilities') return { ...c, name: 'Bills & utilities', budget: 611 };
+          if (c.name === 'Giving') return { ...c, name: 'Gifts & donations', budget: 190 };
+          return c;
+        });
+
+        // Add the new ones that don't map directly if they don't exist
+        const newDefaults = defaultData.expenseCategories;
+        for (const defCat of newDefaults) {
+          if (!migratedCategories.some(c => c.name.toLowerCase() === defCat.name.toLowerCase())) {
+             migratedCategories.push(defCat);
+          }
+        }
+
+        parsed.expenseCategories = migratedCategories;
+      } else if (!migratedCategories.some(c => c.name === 'Other')) {
+        // Ensure "Other" exists for everyone
+        const otherCat = defaultData.expenseCategories.find(c => c.name === 'Other');
+        if (otherCat) {
+          migratedCategories.push(otherCat);
+          parsed.expenseCategories = migratedCategories;
+        }
+      }
+
       return { ...defaultData, ...parsed, version: 1 };
     }
   } catch {/* ignore */}
